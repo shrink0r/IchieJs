@@ -1,4 +1,3 @@
-IchieJs
+IchieJs - I can haz image editor
 =======
 
-I can haz image editor
