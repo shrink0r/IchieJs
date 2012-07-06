@@ -60,5 +60,3 @@ Ichie.prototype.enableCropMode = function()
     select_rect.draw();
     this.layers.main.draw();
 };
-
-Ichie.prototype.constructor = Ichie;

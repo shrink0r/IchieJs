@@ -265,8 +265,6 @@ Ichie.SelectionRect.prototype.draw = function()
     this.layer.draw();
 };
 
-Ichie.SelectionRect.prototype.constructor = Ichie.SelectionRect;
-
 Ichie.SelectionRect.HANDLES = handle_defs = { 
     'northWest': { x: 'west', y: 'north' },
     'north': { x: 'center', y: 'north' },
