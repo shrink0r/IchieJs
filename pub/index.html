@@ -13,20 +13,32 @@
             <div class="navbar-inner">
                 <div class="container-fluid">
                     <h2 class="left">
-                        <a style="padding-right: 10px;" href="index.html" class="brand icon-home" title="I can haz image editor"> IchieJs</a>
+                        <a style="padding-right: 10px;" href="index.html" class="brand icon-home" title="I can haz image editor"> 
+                            IchieJs - I can haz image editor
+                        </a>
                     </h2>
                 </div>
             </div>
         </header>
 
-        <div class="container-fluid" style="margin-top: 5em; margin-bottom: 4em;">
-            <h1 style="margin-bottom: 2em;">IchieJs - I can haz image editor</h1>
+        <div class="container-fluid container-content">
+            <h1 class="title">Basic usage example</h1>
+            <form class="form-horizontal">
+                <fieldset>
+                    <legend>Tools/Options</legend>
+                    <div class="control-group">
+                        <label class="control-label" for="input-keep-ratio">Keep Ratio</label>
+                        <div class="controls">
+                            <input type="checkbox" class="input-xlarge" id="input-keep-ratio">
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
             <div id="stage-container"></div>
         </div>
 
         <footer class="container-fluid">
             <hr />
-            <p>powered by shrink0r</p>
         </footer>
         <!-- libs -->
         <script type='text/javascript' src='js/libs/jquery-1.7.2.js'></script>

@@ -7,12 +7,15 @@ Ichie.SelectionRect = function(stage, options)
 {
     this.stage = stage;
 
+    options = options || {};
     this.options = options;
     this.options.size = options.size || 7;
     this.options.fill = options.fill || "rgba(23, 23, 223, 1)";
     this.options.stroke = options.stroke || "white";
     this.options.stroke_width = options.stroke_width || 1;
+    this.options.keep_ratio = options.keep_ratio || false;
 
+    this.ratio = null;
     this.shapes_groupGroup = null;
     this.layer = null;
     this.resize_handles = null;
@@ -25,6 +28,7 @@ Ichie.SelectionRect.prototype.initLayer = function()
 {
     // Create our cropping rectangle.
     this.crop_rect = this.createCropRect();
+    this.ratio = this.crop_rect.getWidth() / this.crop_rect.getHeight();
     // Create our resize (drag) handles.
     this.resize_handles = this.createResizeHandles();
     // Group shapes_group together for more coding convenience.
@@ -136,8 +140,8 @@ Ichie.SelectionRect.prototype.createResizeHandle = function(handle_name, pos)
             that.buildResizeHandleDragBounds(handle_name)
         );
     });
-    rect.on("dragmove", function() {
-        that.onResizeHandleMoved(rect);
+    rect.on("dragmove", function(event) {
+        that.onResizeHandleMoved(event, rect);
     });
     rect.on("dragend", function() {
         that.shapes_group.setDraggable(true);
@@ -196,13 +200,14 @@ Ichie.SelectionRect.prototype.buildResizeHandleDragBounds = function(handle_name
     return boundry_map[handle_name];
 };
 
-Ichie.SelectionRect.prototype.onResizeHandleMoved = function(handle_rect)
+Ichie.SelectionRect.prototype.onResizeHandleMoved = function(event, handle_rect)
 {
     var pos = handle_rect.getPosition();
     var handle_id = handle_rect.getId();
     var center_offset = (this.options.size / 2);
     var handle_center_x = pos.x + center_offset;
     var handle_center_y = pos.y + center_offset;
+    var handle_abspos = handle_rect.getAbsolutePosition();
     var croprect_relpos = this.crop_rect.getPosition();
 
     if (/east$/ig.test(handle_id))
@@ -213,8 +218,8 @@ Ichie.SelectionRect.prototype.onResizeHandleMoved = function(handle_rect)
     {
         this.crop_rect.setWidth(this.crop_rect.getWidth() + croprect_relpos.x - handle_center_x);
         this.shapes_group.setX(
-            this.shapes_group.getAbsolutePosition().x 
-            + handle_rect.getAbsolutePosition().x 
+            this.shapes_group.getAbsolutePosition().x
+            + handle_abspos.x
             - this.crop_rect.getAbsolutePosition().x + center_offset
         );
     }
@@ -223,13 +228,30 @@ Ichie.SelectionRect.prototype.onResizeHandleMoved = function(handle_rect)
         this.crop_rect.setHeight(this.crop_rect.getHeight() + croprect_relpos.y - handle_center_y);
         this.shapes_group.setY(
             this.shapes_group.getAbsolutePosition().y 
-            + handle_rect.getAbsolutePosition().y 
+            + handle_abspos.y 
             - this.crop_rect.getAbsolutePosition().y + center_offset
         );
     }
     if (/^south/ig.test(handle_id))
     {
         this.crop_rect.setHeight(handle_center_y - croprect_relpos.y);
+    }
+
+
+    if (this.options.keep_ratio)
+    {
+        if (event.mozMovementX > event.mozMovementY)
+        {
+            this.crop_rect.setHeight(
+                this.crop_rect.getWidth() / this.ratio
+            );
+        }
+        else
+        {
+            this.crop_rect.setWidth(
+                this.crop_rect.getHeight() * this.ratio
+            );
+        }
     }
 
     this.applyCropRectDragBounds();

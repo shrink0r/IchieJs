@@ -1,0 +1,10 @@
+.container-content
+{
+    margin-top: 5em; 
+    margin-bottom: 4em;
+}
+
+.container-content .title
+{
+    margin-bottom: 0.5em;
+}
