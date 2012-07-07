@@ -3,32 +3,36 @@
  * #   Ichie - Main Def   #
  * ##########################
  */
-var Ichie = function()
+var Ichie = function(stage_container, options)
 {
-    this.stage = null;
-    this.callbacks = null;
-    this.layers = null;
-};
+    options = options || {};
+    this.options = options;
+    this.options.width = options.width || 150;
+    this.options.height = options.height || 150;
 
-Ichie.prototype.init = function(stage_container)
-{
-    this.layers = { main: new Kinetic.Layer({ id: 'layer-main' }) };
     this.stage = new Kinetic.Stage({
       container: stage_container,
       width: 500,
       height: 300
     });
+    this.layer = new Kinetic.Layer({ id: 'image-layer' });
+    this.stage.add(this.layer);
+    
+    this.image = null;
+    this.select_rect = null;
 };
 
 Ichie.prototype.launch = function(src)
 {
-    var that = this;
-    var image = new Image();
+    var that = this,
+        image = new Image();
     image.onload = function()
     {
-        var kinecticImage = that.createSrcImage(image);
-        that.layers.main.add(kinecticImage);
-        that.stage.add(that.layers.main);
+        that.image = that.createKineticImage(image);
+        that.layer.add(that.image);
+        that.layer.draw();
+        that.select_rect = that.createSelectRect();
+        
         if (that.ready)
         {
             that.ready();
@@ -37,10 +41,10 @@ Ichie.prototype.launch = function(src)
     image.src = src;
 };
 
-Ichie.prototype.createSrcImage = function(image)
+Ichie.prototype.createKineticImage = function(image)
 {
-    var width = image.naturalWidth;
-    var height = image.naturalHeight;
+    var width = image.naturalWidth,
+        height = image.naturalHeight;
     return kinecticImage = new Kinetic.Image({
         image: image,
         x: this.stage.getWidth() / 2 - (width / 2),
@@ -51,12 +55,15 @@ Ichie.prototype.createSrcImage = function(image)
     });
 };
 
-Ichie.prototype.enableCropMode = function()
+Ichie.prototype.createSelectRect = function(image)
 {
-    var select_rect = new Ichie.SelectionRect(this.stage, {
-        'width': 150,
-        'height': 100
+    return new Ichie.SelectionRect(this.stage, {
+        'width': this.options.width,
+        'height': this.options.height
     });
-    select_rect.draw();
-    this.layers.main.draw();
+};
+
+Ichie.prototype.showSelectionRect = function()
+{
+    this.select_rect.show();
 };

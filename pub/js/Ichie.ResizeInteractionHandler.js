@@ -10,7 +10,7 @@ Ichie.ResizeInteractionHandler = function(selection_rect)
     this.selection_rect = selection_rect;
     this.handles = this.selection_rect.getHandles();
     this.last_mousepos = null;
-    
+
     this.registerHandleEvents();
 };
 
