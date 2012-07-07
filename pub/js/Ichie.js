@@ -5,35 +5,30 @@
  */
 var Ichie = function(stage_container, options)
 {
-    options = options || {};
-    this.options = options;
-    this.options.width = options.width || 150;
-    this.options.height = options.height || 150;
+    this.options = $.extend(options || {}, Ichie.DEFAULT_OPTIONS);
 
     this.stage = new Kinetic.Stage({
       container: stage_container,
-      width: 500,
-      height: 300
+      width: this.options.width,
+      height: this.options.height
     });
     this.layer = new Kinetic.Layer({ id: 'image-layer' });
     this.stage.add(this.layer);
     
     this.image = null;
-    this.select_rect = null;
+    this.image_selection = null;
 };
 
 Ichie.prototype.launch = function(src)
 {
-    var that = this,
-        image = new Image();
+    var that = this, image = new Image();
     image.onload = function()
     {
         that.image = that.createKineticImage(image);
         that.layer.add(that.image);
         that.layer.draw();
-        that.select_rect = that.createSelectRect();
-        
-        if (that.ready)
+        that.image_selection = that.createImageAreaSelection();
+        if (that.ready) // @todo replace with proper event propagation
         {
             that.ready();
         }
@@ -43,27 +38,51 @@ Ichie.prototype.launch = function(src)
 
 Ichie.prototype.createKineticImage = function(image)
 {
-    var width = image.naturalWidth,
-        height = image.naturalHeight;
+    var width = image.naturalWidth, height = image.naturalHeight;
     return kinecticImage = new Kinetic.Image({
         image: image,
         x: this.stage.getWidth() / 2 - (width / 2),
         y: this.stage.getHeight() / 2 - (height / 2),
         width: width,
         height: height,
-        id: 'src-img'
+        id: 'src-image'
     });
 };
 
-Ichie.prototype.createSelectRect = function(image)
+Ichie.prototype.createImageAreaSelection = function(image)
 {
-    return new Ichie.SelectionRect(this.stage, {
-        'width': this.options.width,
-        'height': this.options.height
+    return new Ichie.ImageAreaSelection(this, {
+        width: this.options.width / 2,
+        height: this.options.height / 2
     });
 };
 
-Ichie.prototype.showSelectionRect = function()
+Ichie.prototype.showSelection = function()
 {
-    this.select_rect.show();
+    this.image_selection.show();
+};
+
+Ichie.prototype.hideSelection = function()
+{
+    this.image_selection.hide();
+};
+
+Ichie.prototype.getStage = function()
+{
+    return this.stage;
+};
+
+Ichie.prototype.getLayer = function()
+{
+    return this.layer;
+};
+
+Ichie.prototype.getImage = function()
+{
+    return this.image;
+};
+
+Ichie.DEFAULT_OPTIONS = {
+    width: 500,
+    height: 300
 };

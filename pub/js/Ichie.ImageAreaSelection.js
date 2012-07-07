@@ -3,27 +3,27 @@
  * #    Ichie - SelectionRect Def    #
  * #####################################
  */
-Ichie.SelectionRect = function(stage, options)
+Ichie.ImageAreaSelection = function(ichie, options)
 {
-    this.stage = stage;
-    this.options = $.extend(options || {}, Ichie.SelectionRect.DEFAULT_OPTIONS);
+    this.ichie = ichie;
+    this.stage = ichie.getStage();
+    this.options = $.extend(options || {}, Ichie.ImageAreaSelection.DEFAULT_OPTIONS);
 
     this.ratio = null;
     this.shapes_groupGroup = null;
     this.layer = null;
     this.resize_handles = null;
-    this.crop_rect = null;
-    
-    this.initLayer();
+    this.selection_rect = null;
+    this.resizeTracker = null;
 
-    this.resizeInteraction = new Ichie.ResizeInteractionHandler(this);
+    this.init();
 };
 
-Ichie.SelectionRect.prototype.initLayer = function()
+Ichie.ImageAreaSelection.prototype.init = function()
 {
-    // Create our cropping rectangle.
-    this.crop_rect = this.createCropRect();
-    this.ratio = this.crop_rect.getWidth() / this.crop_rect.getHeight();
+    // Create our selection rectangle.
+    this.selection_rect = this.createSelectionRect();
+    this.ratio = this.selection_rect.getWidth() / this.selection_rect.getHeight();
     // Create our resize (drag) handles.
     this.resize_handles = this.createResizeHandles();
     // Group shapes_group together for more coding convenience.
@@ -36,12 +36,14 @@ Ichie.SelectionRect.prototype.initLayer = function()
     this.layer.add(this.shapes_group);
     // ... and the layer to our stage and hope the user will engage (ryhme ryhme).
     this.stage.add(this.layer);
+    // Hook up with a resize tracker so we can react to the user wanting to alter the current selection state.
+    this.resizeTracker = new Ichie.ResizeInteractionTracker(this);
 };
 
-Ichie.SelectionRect.prototype.createCropRect = function()
+Ichie.ImageAreaSelection.prototype.createSelectionRect = function()
 {
     return new Kinetic.Rect({
-        id: 'crop-rect',
+        id: 'selection-rect',
         width: this.options.width,
         height: this.options.height,
         fill: "rgba(0, 0, 0, 0)",
@@ -52,11 +54,10 @@ Ichie.SelectionRect.prototype.createCropRect = function()
     });
 };
 
-Ichie.SelectionRect.prototype.createResizeHandles = function()
+Ichie.ImageAreaSelection.prototype.createResizeHandles = function()
 {
-    var that = this,
-        resize_handles = [];
-    _.each(Ichie.SelectionRect.HANDLES, function(handle_def)
+    var that = this, resize_handles = [];
+    _.each(Ichie.ImageAreaSelection.HANDLES, function(handle_def)
     {
         resize_handles.push(
             that.createResizeHandle(handle_def)
@@ -65,7 +66,7 @@ Ichie.SelectionRect.prototype.createResizeHandles = function()
     return resize_handles;
 };
 
-Ichie.SelectionRect.prototype.createResizeHandle = function(handle_def)
+Ichie.ImageAreaSelection.prototype.createResizeHandle = function(handle_def)
 {
     var coord_map = this.buildResizeHandleCoordMap();
     return new Kinetic.Rect({
@@ -80,20 +81,19 @@ Ichie.SelectionRect.prototype.createResizeHandle = function(handle_def)
     });
 };
 
-
-Ichie.SelectionRect.prototype.buildResizeHandleCoordMap = function()
+Ichie.ImageAreaSelection.prototype.buildResizeHandleCoordMap = function()
 {
     return {
         north: -1 * (this.options.size / 2),
-        east: this.crop_rect.getWidth() - (this.options.size / 2),
-        south: this.crop_rect.getHeight() - (this.options.size / 2),
+        east: this.selection_rect.getWidth() - (this.options.size / 2),
+        south: this.selection_rect.getHeight() - (this.options.size / 2),
         west: -1 * (this.options.size / 2),
-        center: (this.crop_rect.getWidth() / 2) - (this.options.size / 2),
-        middle: (this.crop_rect.getHeight() / 2) - (this.options.size / 2)
+        center: (this.selection_rect.getWidth() / 2) - (this.options.size / 2),
+        middle: (this.selection_rect.getHeight() / 2) - (this.options.size / 2)
     };
 };
 
-Ichie.SelectionRect.prototype.createShapesGroup = function()
+Ichie.ImageAreaSelection.prototype.createShapesGroup = function()
 {
     var shapes_group = new Kinetic.Group({
         draggable: true,
@@ -103,39 +103,33 @@ Ichie.SelectionRect.prototype.createShapesGroup = function()
     shapes_group.setDragBounds(
         this.calculateResizeDragBounds() // lock the "shapes_group" to our image's dimensions
     );
-    shapes_group.add(this.crop_rect);
-    _.each(this.resize_handles, function(handle)
-    {
-        shapes_group.add(handle);
-    });
+    shapes_group.add(this.selection_rect);
+    _.each(this.resize_handles, function(handle) { shapes_group.add(handle); });
     return shapes_group;
 };
 
-Ichie.SelectionRect.prototype.calculateResizeDragBounds = function()
+Ichie.ImageAreaSelection.prototype.calculateResizeDragBounds = function()
 {
-    // Calc and apply drag bounds to our 'shapes_group' group.
-    var img = this.stage.get('#src-img')[0];
-    var pos = img.getAbsolutePosition();
+    var img = this.ichie.getImage(), pos = img.getAbsolutePosition();
     return {
         top: pos.y,
         left: pos.x,
-        right: pos.x + img.getWidth() - this.crop_rect.getWidth(),
-        bottom: pos.y + img.getHeight() - this.crop_rect.getHeight()
+        right: pos.x + img.getWidth() - this.selection_rect.getWidth(),
+        bottom: pos.y + img.getHeight() - this.selection_rect.getHeight()
     };
 };
 
-Ichie.SelectionRect.prototype.onResizeHandleMoved = function(event, handle_rect)
+Ichie.ImageAreaSelection.prototype.onResizeHandleMoved = function(event, handle_rect)
 {
     // @todo react to the ResizeInterActionHandler's resize event's and do stuff ...
     this.repositionResizeHandles();
     this.layer.draw();
 };
 
-Ichie.SelectionRect.prototype.repositionResizeHandles = function()
+Ichie.ImageAreaSelection.prototype.repositionResizeHandles = function()
 {
-    var that = this, 
-        coord_map = this.buildResizeHandleCoordMap();
-    _.each(Ichie.SelectionRect.HANDLES, function(handle_def)
+    var that = this, coord_map = this.buildResizeHandleCoordMap();
+    _.each(Ichie.ImageAreaSelection.HANDLES, function(handle_def)
     {
         var handle = that.shapes_group.get('#'+handle_def.id)[0];
         handle.setX(coord_map[handle_def.x]);
@@ -143,24 +137,24 @@ Ichie.SelectionRect.prototype.repositionResizeHandles = function()
     });
 };
 
-Ichie.SelectionRect.prototype.getHandles = function(idx)
+Ichie.ImageAreaSelection.prototype.getHandles = function(idx)
 {
     return this.resize_handles;
 };
 
-Ichie.SelectionRect.prototype.show = function()
+Ichie.ImageAreaSelection.prototype.show = function()
 {
     this.layer.setAlpha(1);
     this.layer.draw();
 };
 
-Ichie.SelectionRect.prototype.hide = function()
+Ichie.ImageAreaSelection.prototype.hide = function()
 {
     this.layer.setAlpha(0);
     this.layer.draw();
 };
 
-Ichie.SelectionRect.HANDLES = [
+Ichie.ImageAreaSelection.HANDLES = [
     { id: 'northWest', x: 'west', y: 'north' },
     { id: 'north', x: 'center', y: 'north' },
     { id: 'northEast', x: 'east', y: 'north' },
@@ -171,7 +165,7 @@ Ichie.SelectionRect.HANDLES = [
     { id: 'west', x: 'west', y: 'middle' }
 ];
 
-Ichie.SelectionRect.DEFAULT_OPTIONS = {
+Ichie.ImageAreaSelection.DEFAULT_OPTIONS = {
     size: 7,
     fill: "rgba(23, 23, 223, 1)",
     show: false,
