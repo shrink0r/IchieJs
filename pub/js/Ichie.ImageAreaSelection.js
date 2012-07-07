@@ -1,7 +1,7 @@
 /**
- * #####################################
- * #    Ichie - SelectionRect Def    #
- * #####################################
+ * ########################################
+ * #    Ichie - ImageAreaSelection Def    #
+ * ########################################
  */
 Ichie.ImageAreaSelection = function(ichie, options)
 {
@@ -34,7 +34,7 @@ Ichie.ImageAreaSelection.prototype.init = function()
         alpha: this.options.show ? 1 : 0
     });
     this.layer.add(this.shapes_group);
-    // ... and the layer to our stage and hope the user will engage (ryhme ryhme).
+    // ... and add the layer to our stage, then hope the user will engage (ryhme ryhme)
     this.stage.add(this.layer);
     // Hook up with a resize tracker so we can react to the user wanting to alter the current selection state.
     this.resizeTracker = new Ichie.ResizeInteractionTracker(this);

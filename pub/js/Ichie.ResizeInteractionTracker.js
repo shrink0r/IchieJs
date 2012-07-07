@@ -35,6 +35,8 @@ Ichie.ResizeInteractionTracker.prototype.registerHandleEvents = function()
 
 Ichie.ResizeInteractionTracker.prototype.onMouseMove = function(mousemove_event, handle_index)
 {
+    // @todo do the (handle_index + 4 % 8) thingy to determine the handle
+    // that serves as the reference point for (re)positioning after resizing.
     var handle = this.handles[handle_index], evt_x = mousemove_event.clientX, evt_y = mousemove_event.clientY;
     var delta_x = evt_x - this.last_mousepos.x;
     var delta_y = evt_y - this.last_mousepos.y;
