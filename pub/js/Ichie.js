@@ -1,7 +1,8 @@
 /**
- * ##########################
- * #   Ichie - Main Def   #
- * ##########################
+ * Ichie is a client side image editor based on canvas and the Kinetic library.
+ * Besides Kinetic, undescorejs and jquery are also required.
+ * In most cases you are probally all ready using one of those deps and the other excuse is,
+ * that the usage of underscorejs and jquery is pretty minimal so it might be factored at some point.
  */
 var Ichie = function()
 {
@@ -14,6 +15,9 @@ var Ichie = function()
 
 Ichie.prototype = {
 
+    /**
+     * Gets this instance prepared for loading an image and kicking off the editing process.
+     */
     init: function(container, options)
     {
         this.options = $.extend({}, Ichie.DEFAULT_OPTIONS, options || {});
@@ -28,7 +32,10 @@ Ichie.prototype = {
         this.stage.add(this.layer);
     },
 
-    launch: function(src)
+    /**
+     * Loads the given image, then displays it and initializes our ImageAreaSelection.
+     */
+    launch: function(image_source)
     {
         var that = this, image = new Image();
         image.onload = function()
@@ -45,9 +52,12 @@ Ichie.prototype = {
                 that.ready();
             }
         }
-        image.src = src;
+        image.src = image_source;
     },
 
+    /**
+     * Creates the Kinetic.Image instance that represents are currently loaded image.
+     */ 
     createKineticImage: function(image)
     {
         var width = image.naturalWidth, height = image.naturalHeight;
@@ -61,32 +71,52 @@ Ichie.prototype = {
         });
     },
 
+    /**
+     * Shows the currently image selection.
+     */
     showSelection: function()
     {
         this.image_selection.show();
     },
 
+    /**
+     * Hides the currently image selection.
+     */
     hideSelection: function()
     {
         this.image_selection.hide();
     },
 
+    /**
+     * Returns our Kinetic.Stage instance.
+     */
     getStage: function()
     {
         return this.stage;
     },
 
+    /**
+     * Returns our Kinetic.Layer instance.
+     */
     getLayer: function()
     {
         return this.layer;
     },
 
+    /**
+     * Returns our Kinetic.Image instance that represents the currently loaded/drawn image.
+     */
     getImage: function()
     {
         return this.image;
     }
 };
 
+/**
+ * A set of default options that apply when we were not given a specific value,
+ * for one of our supported options.
+ * Options wihtout default values are also listed here and simple have the value null.
+ */
 Ichie.DEFAULT_OPTIONS = {
     width: 500,
     height: 300

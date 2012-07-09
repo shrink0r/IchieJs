@@ -2,13 +2,16 @@
 <!DOCTYPE HTML>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de" lang="de" dir="ltr">
     <head>
+        <!-- HtmlHead - Title, Meta ... -->
         <title>IchieJs - Image Editor</title>
         <link rel="shortcut icon" type="image/x-icon" href="images/favicon.ico" />
-    
+        <!-- Css - Libraries -->
         <link rel='stylesheet' type='text/css' href='css/bootstrap.css' />
+        <!-- Css - IchieJs -->
         <link rel='stylesheet' type='text/css' href='css/ichie.css' />
     </head>
     <body>
+        <!-- HtmlDoc - Header -->
         <header class="navbar navbar-fixed-top" data-scrollspy="scrollspy">
             <div class="navbar-inner">
                 <div class="container-fluid">
@@ -20,9 +23,10 @@
                 </div>
             </div>
         </header>
-
+        <!-- HtmlDoc - Content -->
         <div class="container-fluid container-content">
             <h1 class="title">Basic usage example</h1>
+            <!-- A form holding options to control IchieJs -->
             <form class="form-horizontal">
                 <fieldset>
                     <legend>Tools/Options</legend>
@@ -34,22 +38,25 @@
                     </div>
                 </fieldset>
             </form>
-            <div id="stage-container"></div>
+            <!-- The container that we will pass to Ichie and where the stage will be injected.  -->
+            <div class="container-ichiejs"></div>
         </div>
-
+        <!-- HtmlDoc - Footer -->
         <footer class="container-fluid">
             <hr />
         </footer>
-        <!-- libs -->
+        <!-- Javascript - Libraries -->
         <script type='text/javascript' src='js/libs/underscore.min.js'></script>
         <script type='text/javascript' src='js/libs/jquery-1.7.2.js'></script>
         <script type='text/javascript' src='js/libs/bootstrap.min.js'></script>
         <script type='text/javascript' src='js/libs/kinetic.js'></script>
-        <!-- ichiejs files -->
+        <!-- Javascript - IchieJs -->
         <script type='text/javascript' src='js/Ichie.js'></script>
         <script type='text/javascript' src='js/Ichie.ImageAreaSelection.js'></script>
-        <script type='text/javascript' src='js/Ichie.ResizeInteractionTracker.js'></script>
-        <!-- init script -->
+        <script type='text/javascript' src='js/Ichie.ResizeInteraction.js'></script>
+        <script type='text/javascript' src='js/Ichie.ResizeInteraction.DefaultMode.js'></script>
+        <script type='text/javascript' src='js/Ichie.ResizeInteraction.LockedRatioMode.js'></script>
+        <!-- Javascript - Initialize -->
         <script type='text/javascript' src='js/init.js'></script>
     </body>
 </html>
