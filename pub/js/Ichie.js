@@ -8,12 +8,6 @@
     // that the usage of underscorejs and jquery is pretty minimal so it might be factored at some point.
     // -----------------------------------------------------------------------------
 
-    /**
-     * Ichie is a client side image editor based on canvas and the Kinetic library.
-     * Besides Kinetic, undescorejs and jquery are also required.
-     * In most cases you are probally allready using one of those deps and the other excuse is,
-     * that the usage of underscorejs and jquery is pretty minimal so it might be factored at some point.
-     */
     var Ichie = function()
     {
         this.options = null;
@@ -133,18 +127,14 @@
 
     // -----------------------------------------------------------------------------
     //                          ImageAreaSelection
-    // Provides the ImageAreaSelection with resize behaviour and attaches 
-    // mousedown, -move and -up listeners to do so.
-    // The actual calculation is then delegated to the the *Mode objects (fe: DefaultMode). 
-    // @see the 'Modes Section'
+    // Allows you to define a selection on the currently loaded image
+    // and together with the ResizeInterAction gives the user the possibilty
+    // to alter the selection by interacting through the mouse and touch interface,
+    // thereby providing different select modes such as centered-, symetric- or locked-ratio-selection.
+    // You can query an ImageAreaSelection instance for the bounds of the current selection,
+    // hide, show and reset the current selection.
     // -----------------------------------------------------------------------------
 
-    /**
-     * The ImageAreaSelection allows the user to specify a rect shaped area on an image,
-     * thereby providing different select modes such as centered-, symetric- or locked-ratio-selection.
-     * You can query an ImageAreaSelection instance for the bounds of the current selection,
-     * hide, show and reset the current selection.
-     */
     var ImageAreaSelection = function()
     {
         this.ichie = null;
@@ -442,10 +432,6 @@
     // @see the 'Modes Section'
     // -----------------------------------------------------------------------------
 
-    /**
-     * The ResizeInteraction allows the user to resize a given ImageAreaSelection,
-     * by dragging one of the ImageAreaSelection's resize handles.
-     */
     var ResizeInteraction = function()
     {
         this.image_selection = null;
