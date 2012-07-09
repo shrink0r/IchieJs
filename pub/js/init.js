@@ -3,16 +3,14 @@
  * that we want IchieJs to use as it's container.
  * Then launch the ichie instance with an image url and make it show the selection rect on ready.
  */
-(function(container, image_uri)
+(function(exports, $)
 {
-    var ichie = new Ichie();
-    ichie.init(container);
-    ichie.launch(image_uri);
-    ichie.ready = function()
+    var ichie = exports.IchieJs.create(
+        $('.container-ichiejs').first()[0]
+    );
+    ichie.launch('images/vader2.jpg', function()
     {
+        console.log("asdas");
         ichie.showSelection();
-    };
-})(
-    $('.container-ichiejs').first()[0], 
-    'images/vader2.jpg'
-);
+    });
+})(window, $);
