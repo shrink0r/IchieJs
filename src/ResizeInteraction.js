@@ -57,7 +57,8 @@ ResizeInteraction.prototype = {
      */
     registerHandleEvents: function()
     {
-        var registerHandle = function(index)
+        var that = this,
+            registerHandle = function(index)
         {
             var handle = that.handles[index];
             var mousemoveEventHandler = function(event){ that.onMouseMove(event, index); };
@@ -76,7 +77,8 @@ ResizeInteraction.prototype = {
                 window.document.addEventListener('mouseup', mouseupEventHandler);
             });
         };
-        for (var that = this, idx = 0; idx < this.handles.length; idx++)
+        
+        for (var idx = 0; idx < this.handles.length; idx++)
         {
             registerHandle(idx);
         }

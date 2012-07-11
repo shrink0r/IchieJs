@@ -9,7 +9,7 @@ module.exports = function(grunt) {
         '<%= grunt.template.today("yyyy-mm-dd") %>\n' +
         '* https://github.com/shrink/IchieJs/\n' +
         '* Copyright (c) <%= grunt.template.today("yyyy") %> ' +
-        'Thorsten Schmitt-Rink; Licensed MIT */'
+        '"Shrink0r" Thorsten Schmitt-Rink; Licensed MIT */'
     },
     lint: {
       files: ['grunt.js', 'src/**/*.js', 'test/**/*.js']

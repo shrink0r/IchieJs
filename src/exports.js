@@ -1,4 +1,4 @@
-/*global $:false, _:false, Kinetic:false, Ichie:false, exports:false*/
+/*global $:false, _:false, Ichie:false, exports:false*/
 
 // -----------------------------------------------------------------------------
 //                          EXPORTS SECTION
@@ -17,5 +17,3 @@ exports.IchieJs = {
         return ichie;
     }
 };
-
-
