@@ -1,0 +1,2 @@
+(function(exports, $, _) {
+    var Kinetic = exports.Kinetic;

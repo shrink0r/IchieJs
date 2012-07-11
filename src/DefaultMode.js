@@ -1,13 +1,24 @@
+/*global $:false, _:false, Kinetic:false, ResizeInteraction:false, LockedRatioMode:false*/
+
+// -----------------------------------------------------------------------------
+//                       *Modes (DefaultMode and family)
+// The different modes, that are available to the ResizeInteraction.
+// A mode's task is calculate the new dimensions and position for the ResizeInteraction
+// during the processing of mousemove events.
+// To do so, a mode is passed the index of the originating resize-handle and the 
+// delta between the current and the last mousemove event.
+// -----------------------------------------------------------------------------
+
 /**
  * Implements the logic for the 'default' resize mode,
  * allowing the user to resize in all directions without any constraints.
  */
-Ichie.ResizeInteraction.DefaultMode = function()
+var DefaultMode = function()
 {
     this.interaction = null;
 };
 
-Ichie.ResizeInteraction.DefaultMode.prototype = {
+DefaultMode.prototype = {
 
     init: function(interaction)
     {
@@ -17,7 +28,7 @@ Ichie.ResizeInteraction.DefaultMode.prototype = {
     /**
      * Get the rect resize/reposition calcultions done for 'default' selections.
      */
-    apply: function(handle_index, delta)
+    buildSelectGeometry: function(handle_index, delta)
     {
         return this.clipSelectionToBoundry({
             pos: this.calculateSelectPostion(handle_index, delta),
@@ -31,14 +42,13 @@ Ichie.ResizeInteraction.DefaultMode.prototype = {
      */
     calculateSelectDimensions: function(handle_index, delta)
     {
-        var image_selection = this.interaction.getImageSelection();
+        var image_selection = this.interaction.getImageSelection(),
+            selection_rect = image_selection.getSelectionRect();
 
-        // Setup vars required for calculation.
-        var selection_rect = image_selection.getSelectionRect(),
-            width = selection_rect.getWidth(),
+        var width = selection_rect.getWidth(),
             height = selection_rect.getHeight();
 
-        var dir = Ichie.ResizeInteraction.DIRECTION,
+        var dir = ResizeInteraction.DIRECTION,
             direction = this.determineResizeDirection(handle_index, delta);
 
         width += (direction === dir.HORIZONTAL || direction === dir.BOTH) ? delta.x : 0;
@@ -49,11 +59,11 @@ Ichie.ResizeInteraction.DefaultMode.prototype = {
 
     /**
      * Determines which direction the next resize should take.
-     * Returns one of the Ichie.ResizeInteraction.DIRECTION.* 'constants'.
+     * Returns one of the ResizeInteraction.DIRECTION.* 'constants'.
      */
     determineResizeDirection: function(handle_index, delta)
     {
-        var dir = Ichie.ResizeInteraction.DIRECTION, 
+        var dir = ResizeInteraction.DIRECTION, 
             direction = null;
 
         var handle_map = {};
@@ -135,3 +145,4 @@ Ichie.ResizeInteraction.DefaultMode.prototype = {
         return { pos: new_pos, dim: new_dim };
     }
 };
+

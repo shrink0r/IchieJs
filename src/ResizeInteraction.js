@@ -1,8 +1,14 @@
-/**
- * The ResizeInteraction allows the user to resize a given ImageAreaSelection,
- * by dragging one of the ImageAreaSelection's resize handles.
- */
-Ichie.ResizeInteraction = function()
+/*global $:false, _:false, Kinetic:false, LockedRatioMode:false, global DefaultMode:false*/
+
+// -----------------------------------------------------------------------------
+//                          ResizeInterAction
+// Provides the ImageAreaSelection with resize behaviour and attaches 
+// mousedown, -move and -up listeners to do so.
+// The actual calculation is then delegated to the the *Mode objects (fe: DefaultMode). 
+// @see the 'Modes Section'
+// -----------------------------------------------------------------------------
+
+var ResizeInteraction = function()
 {
     this.image_selection = null;
     this.handles = null;
@@ -11,7 +17,7 @@ Ichie.ResizeInteraction = function()
     this.boundry = null;
 };
 
-Ichie.ResizeInteraction.prototype = {
+ResizeInteraction.prototype = {
 
     /**
      * Hooks up with the given ImageAreaSelection, 
@@ -25,7 +31,7 @@ Ichie.ResizeInteraction.prototype = {
             this.image_selection.getLayer().getCanvas()
         );
         this.boundry = this.calculateBoundry();
-        this.mode = new Ichie.ResizeInteraction.LockedRatioMode();
+        this.mode = new LockedRatioMode();
         this.mode.init(this);
         this.last_mousepos = null;
         this.registerHandleEvents();
@@ -51,13 +57,13 @@ Ichie.ResizeInteraction.prototype = {
      */
     registerHandleEvents: function()
     {
-        for (var that = this, idx = 0; idx < this.handles.length; idx++)(function(index)
+        var registerHandle = function(index)
         {
             var handle = that.handles[index];
             var mousemoveEventHandler = function(event){ that.onMouseMove(event, index); };
             var mouseupEventHandler = function(event){ 
                 that.image_selection.shapes_group.setDraggable(true);
-                that.last_mousepos = null,
+                that.last_mousepos = null;
                 window.document.removeEventListener('mousemove', mousemoveEventHandler);
                 window.document.removeEventListener('mouseup', mouseupEventHandler);
             };
@@ -69,7 +75,11 @@ Ichie.ResizeInteraction.prototype = {
                 window.document.addEventListener('mousemove', mousemoveEventHandler);
                 window.document.addEventListener('mouseup', mouseupEventHandler);
             });
-        })(idx);
+        };
+        for (var that = this, idx = 0; idx < this.handles.length; idx++)
+        {
+            registerHandle(idx);
+        }
     },
 
     /**
@@ -86,7 +96,7 @@ Ichie.ResizeInteraction.prototype = {
             delta = this.calculateEventDelta(handle_index, evt_pos);
 
         this.image_selection.setSelection(
-            this.mode.apply(handle_index, delta)
+            this.mode.buildSelectGeometry(handle_index, delta)
         );
 
         this.last_mousepos = evt_pos;
@@ -125,12 +135,12 @@ Ichie.ResizeInteraction.prototype = {
     {
         return this.image_selection;
     }
-}
+};
 
 /**
  * Holds the possible directions for resizing.
  */
-Ichie.ResizeInteraction.DIRECTION = { 
+ResizeInteraction.DIRECTION = { 
     HORIZONTAL: 'horizontal', 
     VERTICAL: 'vertical', 
     BOTH: 'both' 
@@ -141,7 +151,8 @@ Ichie.ResizeInteraction.DIRECTION = {
  * A mode basically referes to the way the mousemovement is interpretated
  * to calculate the resulting dimension and postion of the current selection.
  */
-Ichie.ResizeInteraction.MODE = {
+ResizeInteraction.MODE = {
     DEFAULT: 'default',
     RATIO: 'ratio'
 };
+

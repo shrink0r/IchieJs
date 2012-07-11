@@ -1,10 +1,16 @@
-/**
- * The ImageAreaSelection allows the user to specify a rect shaped area on an image,
- * thereby providing different select modes such as centered-, symetric- or locked-ratio-selection.
- * You can query an ImageAreaSelection instance for the bounds of the current selection,
- * hide, show and reset the current selection.
- */
-Ichie.ImageAreaSelection = function()
+/*global $:false, _:false, Kinetic:false, ResizeInteraction:false*/
+
+// -----------------------------------------------------------------------------
+//                          ImageAreaSelection
+// Allows you to define a selection on the currently loaded image
+// and together with the ResizeInterAction gives the user the possibilty
+// to alter the selection by interacting through the mouse and touch interface,
+// thereby providing different select modes such as centered-, symetric- or locked-ratio-selection.
+// You can query an ImageAreaSelection instance for the bounds of the current selection,
+// hide, show and reset the current selection.
+// -----------------------------------------------------------------------------
+
+var ImageAreaSelection = function()
 {
     this.ichie = null;
     this.stage = null;
@@ -17,7 +23,7 @@ Ichie.ImageAreaSelection = function()
     this.resizeInteraction = null;
 };
 
-Ichie.ImageAreaSelection.prototype = {
+ImageAreaSelection.prototype = {
 
     /**
      * Sets up the gui and the ResizeInterAction that will make us resizeable.
@@ -26,7 +32,7 @@ Ichie.ImageAreaSelection.prototype = {
     {
         this.ichie = ichie;
         this.stage = ichie.getStage();
-        this.options = $.extend({}, Ichie.ImageAreaSelection.DEFAULT_OPTIONS, options || {});
+        this.options = $.extend({}, ImageAreaSelection.DEFAULT_OPTIONS, options || {});
 
         // Create our selection rectangle.
         this.selection_rect = this.createSelectionRect();
@@ -44,7 +50,7 @@ Ichie.ImageAreaSelection.prototype = {
         // ... and add the layer to our stage, then hope the user will engage (ryhme ryhme)
         this.stage.add(this.layer);
         // Hook up with a resize tracker so we can react to the user wanting to alter the current selection state.
-        this.resizeInteraction = new Ichie.ResizeInteraction();
+        this.resizeInteraction = new ResizeInteraction();
         this.resizeInteraction.init(this);
     },
 
@@ -66,7 +72,7 @@ Ichie.ImageAreaSelection.prototype = {
     },
 
     /**
-     * Creates our resize handles according to the definitions in Ichie.ImageAreaSelection.HANDLES.
+     * Creates our resize handles according to the definitions in ImageAreaSelection.HANDLES.
      */
     createResizeHandles: function()
     {
@@ -74,7 +80,7 @@ Ichie.ImageAreaSelection.prototype = {
             resize_handles = [], 
             coord_map = this.calculateResizeHandleCoordMap();
 
-        _.each(Ichie.ImageAreaSelection.HANDLES, function(handle_def)
+        _.each(ImageAreaSelection.HANDLES, function(handle_def)
         {
             resize_handles.push(
                 that.createResizeHandle(handle_def, coord_map)
@@ -105,7 +111,7 @@ Ichie.ImageAreaSelection.prototype = {
      * Calculates coordinates that are used to position our resize handle shapes
      * along the border of our selection rect.
      * The keys of the returned object map to the 'x' and 'y' values 
-     * of a handle definition inside the Ichie.ImageAreaSelection.HANDLES array.
+     * of a handle definition inside the ImageAreaSelection.HANDLES array.
      */
     calculateResizeHandleCoordMap: function()
     {
@@ -168,7 +174,7 @@ Ichie.ImageAreaSelection.prototype = {
             idx = 0,
             coord_map = this.calculateResizeHandleCoordMap();
 
-        _.each(Ichie.ImageAreaSelection.HANDLES, function(handle_def)
+        _.each(ImageAreaSelection.HANDLES, function(handle_def)
         {
             var handle = that.resize_handles[idx++];
             handle.setX(coord_map[handle_def.x]);
@@ -266,7 +272,7 @@ Ichie.ImageAreaSelection.prototype = {
  * @notice The order is important as we want to be able to calc the opposite side
  * handle of a given handle by adding 4 to the give index.
  */
-Ichie.ImageAreaSelection.HANDLES = [
+ImageAreaSelection.HANDLES = [
     { x: 'west', y: 'north' }, // northWest
     { x: 'center', y: 'north' }, // north
     { x: 'east', y: 'north' }, // northEast
@@ -282,7 +288,7 @@ Ichie.ImageAreaSelection.HANDLES = [
  * if no specific value is found inside the provided external options 'hash'.
  * Options wihtout default values are also listed here and simple have the value null.
  */
-Ichie.ImageAreaSelection.DEFAULT_OPTIONS = {
+ImageAreaSelection.DEFAULT_OPTIONS = {
     size: 7,
     fill: "rgba(23, 23, 223, 1)",
     show: false,
@@ -290,3 +296,4 @@ Ichie.ImageAreaSelection.DEFAULT_OPTIONS = {
     stroke_width: 2,
     keep_ratio: false
 };
+
