@@ -1,4 +1,4 @@
-/*global $:false, _:false, Kinetic:false, ResizeInteraction:false*/
+/*global ResizeInteraction:false, SelectionOverlay:false*/
 
 // -----------------------------------------------------------------------------
 //                          ImageAreaSelection
@@ -16,11 +16,12 @@ var ImageAreaSelection = function()
     this.stage = null;
     this.options = null;
     this.ratio = null;
-    this.shapes_groupGroup = null;
+    this.shapes_group = null;
     this.layer = null;
     this.resize_handles = null;
     this.selection_rect = null;
     this.resizeInteraction = null;
+    this.resize_overlay = null;
 };
 
 ImageAreaSelection.prototype = {
@@ -47,11 +48,16 @@ ImageAreaSelection.prototype = {
             alpha: this.options.show ? 1 : 0
         });
         this.layer.add(this.shapes_group);
-        // ... and add the layer to our stage, then hope the user will engage (ryhme ryhme)
-        this.stage.add(this.layer);
+        
         // Hook up with a resize tracker so we can react to the user wanting to alter the current selection state.
         this.resizeInteraction = new ResizeInteraction();
         this.resizeInteraction.init(this);
+
+        this.resize_overlay = new SelectionOverlay();
+        this.resize_overlay.init(this);
+
+        // ... and add the layer to our stage, then hope the user will engage (ryhme ryhme)
+        this.stage.add(this.layer);
     },
 
     /**
@@ -153,14 +159,12 @@ ImageAreaSelection.prototype = {
      */
     calculateDragBounds: function()
     {
-        var img = this.ichie.getImage(), 
-            pos = img.getAbsolutePosition();
-
+        var boundry = this.getImageBoundry();
         return {
-            top: pos.y,
-            left: pos.x,
-            right: pos.x + img.getWidth() - this.selection_rect.getWidth(),
-            bottom: pos.y + img.getHeight() - this.selection_rect.getHeight()
+            top: boundry.top,
+            left: boundry.left,
+            right: boundry.right - this.selection_rect.getWidth(),
+            bottom: boundry.bottom - this.selection_rect.getHeight()
         };
     },
 
@@ -187,12 +191,16 @@ ImageAreaSelection.prototype = {
      * that is currently selected.
      * The coords returned are relative to the image's current position.
      */ 
-    getSelection: function()
+    getSelection: function(relative)
     {
+        if (true !== relative)
+        {
+            relative = false;
+        }
         var select_pos = this.selection_rect.getAbsolutePosition(),
             img_pos = this.ichie.getImage().getAbsolutePosition(),
-            select_x = select_pos.x - img_pos.x,
-            select_y = select_pos.y - img_pos.y;
+            select_x = relative ? (select_pos.x - img_pos.x) : select_pos.x,
+            select_y = relative ? (select_pos.y - img_pos.y) : select_pos.y;
 
         return {
             top: select_y,
@@ -216,7 +224,7 @@ ImageAreaSelection.prototype = {
         this.shapes_group.setDragBounds(this.calculateDragBounds());
 
         this.correctResizeHandlePositions();
-
+        this.resize_overlay.adaptSelection(selection);
         this.layer.draw();
     },
 
@@ -235,6 +243,11 @@ ImageAreaSelection.prototype = {
     getSelectionRect: function()
     {
         return this.selection_rect;
+    },
+
+    getImageBoundry: function()
+    {
+        return this.ichie.getImageBoundry();
     },
 
     /**
@@ -296,4 +309,3 @@ ImageAreaSelection.DEFAULT_OPTIONS = {
     stroke_width: 2,
     keep_ratio: false
 };
-

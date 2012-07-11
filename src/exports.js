@@ -1,4 +1,4 @@
-/*global $:false, _:false, Ichie:false, exports:false*/
+/*global Ichie:false, exports:false*/
 
 // -----------------------------------------------------------------------------
 //                          EXPORTS SECTION

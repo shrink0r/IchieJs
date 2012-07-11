@@ -1,4 +1,4 @@
-/*global $:false, _:false, Kinetic:false, ResizeInteraction:false, DefaultMode:false*/
+/*global ResizeInteraction:false, DefaultMode:false*/
 
 /**
  * Implements the logic for the 'locked-ratio' resize mode,
@@ -12,7 +12,7 @@ LockedRatioMode.prototype = new DefaultMode();
 LockedRatioMode.prototype.constructor = LockedRatioMode;
 
 /**
- * Get the rect resize/reposition calcultions done for 'locked-ration' selections.
+ * Get the rect resize/reposition calcultions done for 'locked-ratio' selections.
  */
 LockedRatioMode.prototype.buildSelectGeometry = function(handle_index, delta)
 {
@@ -108,4 +108,3 @@ LockedRatioMode.prototype.determineResizeDirection = function(handle_index, delt
     }
     return direction;
 };
-

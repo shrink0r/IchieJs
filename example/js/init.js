@@ -1,7 +1,8 @@
 /**
  * Create and intialize a new Ichie instance thereby passing in the html element id,
  * that we want IchieJs to use as it's container.
- * Then launch the ichie instance with an image url and make it show the selection rect on ready.
+ * Then launch the ichie instance with an image url 
+ * and make it show the selection rect on ready.
  */
 (function(exports, $)
 {
@@ -10,7 +11,20 @@
     );
     ichie.launch('images/vader2.jpg', function()
     {
-        console.log("asdas");
         ichie.showSelection();
+
+        $('.trigger-filter').click(function()
+        {
+            ichie.filter(
+                $(this).data('filter-name')
+            );
+        });
+
+        $('#input-keep-ratio').change(function()
+        {
+            ichie.setSelectMode(
+                $(this).is(':checked') ? 'ratio' : 'default'
+            );
+        });
     });
-})(window, $);
+})(typeof exports === 'object' && exports || this, jQuery);

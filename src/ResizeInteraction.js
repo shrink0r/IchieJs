@@ -1,4 +1,4 @@
-/*global $:false, _:false, Kinetic:false, LockedRatioMode:false, global DefaultMode:false*/
+/*global LockedRatioMode:false, DefaultMode:false*/
 
 // -----------------------------------------------------------------------------
 //                          ResizeInterAction
@@ -30,25 +30,11 @@ ResizeInteraction.prototype = {
         this.canvas = $(
             this.image_selection.getLayer().getCanvas()
         );
-        this.boundry = this.calculateBoundry();
-        this.mode = new LockedRatioMode();
+        this.boundry = this.image_selection.getImageBoundry();
+        this.mode = new DefaultMode();
         this.mode.init(this);
         this.last_mousepos = null;
         this.registerHandleEvents();
-    },
-
-    calculateBoundry: function()
-    {
-        var ichie = this.image_selection.ichie,
-            img = ichie.getImage(),
-            img_pos = img.getAbsolutePosition();
-
-        return {
-            top: img_pos.y,
-            right: img_pos.x + img.getWidth(),
-            bottom: img_pos.y + img.getHeight(),
-            left: img_pos.x
-        };
     },
 
     /**
@@ -59,29 +45,41 @@ ResizeInteraction.prototype = {
     {
         var that = this,
             registerHandle = function(index)
-        {
-            var handle = that.handles[index];
-            var mousemoveEventHandler = function(event){ that.onMouseMove(event, index); };
-            var mouseupEventHandler = function(event){ 
-                that.image_selection.shapes_group.setDraggable(true);
-                that.last_mousepos = null;
-                window.document.removeEventListener('mousemove', mousemoveEventHandler);
-                window.document.removeEventListener('mouseup', mouseupEventHandler);
+            {
+                var handle = that.handles[index];
+                var mousemoveEventHandler = function(event){ that.onMouseMove(event, index); };
+                var mouseupEventHandler = function(event){ 
+                    that.image_selection.shapes_group.setDraggable(true);
+                    that.last_mousepos = null;
+                    window.document.removeEventListener('mousemove', mousemoveEventHandler);
+                    window.document.removeEventListener('mouseup', mouseupEventHandler);
+                };
+
+                handle.on('mousedown touchstart', function(event)
+                {
+                    that.image_selection.shapes_group.setDraggable(false);
+                    that.last_mousepos = { x: event.pageX, y: event.pageY };
+                    window.document.addEventListener('mousemove', mousemoveEventHandler);
+                    window.document.addEventListener('mouseup', mouseupEventHandler);
+                });
             };
 
-            handle.on('mousedown touchstart', function(event)
-            {
-                that.image_selection.shapes_group.setDraggable(false);
-                that.last_mousepos = { x: event.pageX, y: event.pageY };
-                window.document.addEventListener('mousemove', mousemoveEventHandler);
-                window.document.addEventListener('mouseup', mouseupEventHandler);
-            });
-        };
-        
         for (var idx = 0; idx < this.handles.length; idx++)
         {
             registerHandle(idx);
         }
+
+        var rect = this.image_selection.getSelectionRect();
+        this.image_selection.shapes_group.on('dragmove', function()
+        {
+            that.image_selection.setSelection({
+                pos: rect.getAbsolutePosition(),
+                dim: {
+                    width: rect.getWidth(),
+                    height: rect.getHeight()
+                }
+            });
+        });
     },
 
     /**
@@ -133,6 +131,19 @@ ResizeInteraction.prototype = {
         return this.boundry;
     },
 
+    setMode: function(name)
+    {
+        if ('ratio' === name)
+        {
+            this.mode = new LockedRatioMode();
+        }
+        else
+        {
+            this.mode = new DefaultMode();
+        }
+        this.mode.init(this);
+    },
+
     getImageSelection: function()
     {
         return this.image_selection;
@@ -157,4 +168,3 @@ ResizeInteraction.MODE = {
     DEFAULT: 'default',
     RATIO: 'ratio'
 };
-

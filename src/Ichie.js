@@ -1,4 +1,4 @@
-/*global $:false, _:false, Kinetic:false, ImageAreaSelection:false*/
+/*global ImageAreaSelection:false, ImageFilters:false*/
 
 // -----------------------------------------------------------------------------
 //                          Ichie
@@ -15,6 +15,7 @@ var Ichie = function()
     this.layer = null;
     this.image = null;
     this.image_selection = null;
+    this.image_boundry = null;
 };
 
 Ichie.prototype = {
@@ -42,15 +43,26 @@ Ichie.prototype = {
     launch: function(image_source, ready_hook)
     {
         var that = this, image = new Image();
+
         image.onload = function()
         {
             that.image = that.createKineticImage(image);
             that.layer.add(that.image);
             that.layer.draw();
+
+            var img_pos = that.image.getAbsolutePosition();
+            that.image_boundry = {
+                top: Math.floor(img_pos.y),
+                right: Math.ceil(img_pos.x + that.image.getWidth()),
+                bottom: Math.ceil(img_pos.y + that.image.getHeight()),
+                left: Math.floor(img_pos.x)
+            };
+
             that.image_selection.init(that, {
                 width: that.options.width / 2,
                 height: that.options.height / 2
             });
+
             ready_hook();
         };
         image.src = image_source;
@@ -110,6 +122,35 @@ Ichie.prototype = {
     getImage: function()
     {
         return this.image;
+    },
+
+    getImageBoundry: function()
+    {
+        return this.image_boundry;
+    },
+
+    filter: function(name, options)
+    {
+        var ctx = this.layer.getContext('2d');
+        var selection = this.image_selection.getSelection();
+        var imageData = ctx.getImageData(
+            selection.left, 
+            selection.top, 
+            selection.right - selection.left, 
+            selection.bottom - selection.top
+        );
+        var filtered = ImageFilters[name](imageData);
+        ctx.putImageData(filtered, selection.left, selection.top);
+    },
+
+    crop: function()
+    {
+        // @todo implement ^^
+    },
+
+    setSelectMode: function(name)
+    {
+        this.image_selection.resizeInteraction.setMode(name);
     }
 };
 
@@ -122,4 +163,3 @@ Ichie.DEFAULT_OPTIONS = {
     width: 500,
     height: 300
 };
-

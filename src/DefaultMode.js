@@ -1,4 +1,4 @@
-/*global $:false, _:false, Kinetic:false, ResizeInteraction:false, LockedRatioMode:false*/
+/*global ResizeInteraction:false*/
 
 // -----------------------------------------------------------------------------
 //                       *Modes (DefaultMode and family)
@@ -145,4 +145,3 @@ DefaultMode.prototype = {
         return { pos: new_pos, dim: new_dim };
     }
 };
-

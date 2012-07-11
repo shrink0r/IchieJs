@@ -23,9 +23,11 @@
                 </div>
             </div>
         </header>
+
         <!-- HtmlDoc - Content -->
         <div class="container-fluid container-content">
             <h1 class="title">Basic usage example</h1>
+
             <!-- A form holding options to control IchieJs -->
             <form class="form-horizontal">
                 <fieldset>
@@ -33,25 +35,38 @@
                     <div class="control-group">
                         <label class="control-label" for="input-keep-ratio">Keep Ratio</label>
                         <div class="controls">
-                            <input type="checkbox" class="input-xlarge" id="input-keep-ratio">
+                            <input type="checkbox" class="input-xlarge" id="input-keep-ratio" checked="unchecked" />
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Filters</label>
+                        <div class="controls">
+                            <button type="button" class="btn trigger-filter" data-filter-name="GrayScale">GrayScale</button>
+                            <button type="button" class="btn trigger-filter" data-filter-name="Binarize">Binarize</button>
+                            <button type="button" class="btn trigger-filter" data-filter-name="GaussianBlur">GaussianBlur</button>
+                            <button type="button" class="btn trigger-filter" data-filter-name="Desaturate">Desaturate</button>
+                            <button type="button" class="btn trigger-filter" data-filter-name="Invert">Invert</button>
                         </div>
                     </div>
                 </fieldset>
             </form>
+
             <!-- The container that we will pass to Ichie and where the stage will be injected.  -->
             <div class="container-ichiejs"></div>
         </div>
+
         <!-- HtmlDoc - Footer -->
         <footer class="container-fluid">
             <hr />
         </footer>
+
         <!-- Javascript - Libraries -->
         <script type='text/javascript' src='js/libs/underscore.min.js'></script>
         <script type='text/javascript' src='js/libs/jquery-1.7.2.js'></script>
         <script type='text/javascript' src='js/libs/bootstrap.min.js'></script>
         <script type='text/javascript' src='js/libs/kinetic.js'></script>
         <!-- Javascript - IchieJs -->
-        <script type='text/javascript' src='js/Ichie.js'></script>
+        <script type='text/javascript' src='js/ichie.min.js'></script>
         <!-- Javascript - Initialize -->
         <script type='text/javascript' src='js/init.js'></script>
     </body>
