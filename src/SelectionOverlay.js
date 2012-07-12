@@ -23,8 +23,7 @@ SelectionOverlay.prototype = {
                 width: boundry.right - boundry.left
             }),
             east: new Kinetic.Rect({
-                fill: 'grey',
-                x: boundry.left
+                fill: 'grey'
             }),
             south: new Kinetic.Rect({
                 fill: 'grey',
@@ -43,23 +42,27 @@ SelectionOverlay.prototype = {
         this.image_selection.stage.add(this.layer);
     },
 
-    adaptSelection: function(selection)
+    update: function()
     {
         var boundry = this.image_selection.getImageBoundry();
         var rect = this.image_selection.getSelectionRect();
         var rect_pos = rect.getAbsolutePosition();
+        this.shapes.north.setWidth(boundry.right - boundry.left);
+        this.shapes.north.setX(boundry.left);
+        this.shapes.north.setY(boundry.top);
         this.shapes.north.setHeight(
             Math.ceil(rect_pos.y - boundry.top)
         );
 
-        var south_y = rect_pos.y + selection.dim.height;
-        this.shapes.south.setY(
-            Math.ceil(south_y)
-        );
+        var south_y = rect_pos.y + rect.getHeight();
+        this.shapes.south.setX(boundry.left);
+        this.shapes.south.setY(Math.ceil(south_y));
+        this.shapes.south.setWidth(boundry.right - boundry.left);
         this.shapes.south.setHeight(
             Math.ceil(boundry.bottom - south_y)
         );
 
+        this.shapes.west.setX(boundry.left);
         this.shapes.west.setY(rect_pos.y);
         this.shapes.west.setWidth(rect_pos.x - boundry.left);
         this.shapes.west.setHeight(

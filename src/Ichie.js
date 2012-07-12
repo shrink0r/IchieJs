@@ -1,4 +1,4 @@
-/*global ImageAreaSelection:false, CommandQueue:false, FilterCommand:false*/
+/*global ImageAreaSelection:false, CommandQueue:false, FilterCommand:false, CropCommand:false, PasteCommand:false*/
 
 // -----------------------------------------------------------------------------
 //                          Ichie
@@ -49,9 +49,11 @@ Ichie.prototype = {
 
         image.onload = function()
         {
-            that.image = that.createKineticImage(image);
+            that.image = new Kinetic.Image({
+                id: 'src-image'
+            });
             that.layer.add(that.image);
-            that.layer.draw();
+            that.onImageLoaded(image);
 
             var img_pos = that.image.getAbsolutePosition();
             that.image_boundry = {
@@ -71,20 +73,26 @@ Ichie.prototype = {
         image.src = image_source;
     },
 
-    /**
-     * Creates the Kinetic.Image instance that represents are currently loaded image.
-     */ 
-    createKineticImage: function(image)
+    onImageLoaded: function(image)
     {
-        var width = image.naturalWidth, height = image.naturalHeight;
-        return new Kinetic.Image({
-            image: image,
-            x: this.stage.getWidth() / 2 - (width / 2),
-            y: this.stage.getHeight() / 2 - (height / 2),
-            width: width,
-            height: height,
-            id: 'src-image'
-        });
+        var width = image.naturalWidth, 
+            height = image.naturalHeight,
+            x = this.stage.getWidth() / 2 - (width / 2),
+            y = this.stage.getHeight() / 2 - (height / 2);
+
+        this.image.setHeight(height);
+        this.image.setWidth(width);
+        this.image.setX(x);
+        this.image.setY(y);
+        this.image.setImage(image);
+        this.image_boundry = {
+            top: Math.floor(y),
+            right: Math.ceil(x + width),
+            bottom: Math.ceil(y + height),
+            left: Math.floor(x)
+        };
+
+        this.layer.draw();
     },
 
     /**
@@ -101,35 +109,6 @@ Ichie.prototype = {
     hideSelection: function()
     {
         this.image_selection.hide();
-    },
-
-    /**
-     * Returns our Kinetic.Stage instance.
-     */
-    getStage: function()
-    {
-        return this.stage;
-    },
-
-    /**
-     * Returns our Kinetic.Layer instance.
-     */
-    getLayer: function()
-    {
-        return this.layer;
-    },
-
-    /**
-     * Returns our Kinetic.Image instance that represents the currently loaded/drawn image.
-     */
-    getImage: function()
-    {
-        return this.image;
-    },
-
-    getImageBoundry: function()
-    {
-        return this.image_boundry;
     },
 
     undo: function()
@@ -159,12 +138,13 @@ Ichie.prototype = {
         {
             return;
         }
-        var selection = this.image_selection.getSelection();
-        this.layer.getContext().putImageData(
-            this.clipboard,
-            selection.left, 
-            selection.top
-        );
+        var command = new PasteCommand();
+        command.init({
+            canvas: this.layer.getCanvas(),
+            selection: this.image_selection.getSelection(),
+            data: this.clipboard
+        });
+        this.command_queue.execute(command);
         this.clipboard = null;
     },
 
@@ -181,12 +161,57 @@ Ichie.prototype = {
 
     crop: function()
     {
-        // @todo implement ^^
+        var command = new CropCommand();
+        var that = this;
+        command.init({
+            context: this.layer.getContext(),
+            selection: this.image_selection.getSelection(),
+            image_bounds: this.getImageBoundry(),
+            onexecuted: function(image)
+            {
+                that.onImageLoaded(image);
+                var boundry = that.getImageBoundry();
+                that.image_selection.setSelection({
+                    pos: { x: boundry.left + 10, y: boundry.top + 10 },
+                    dim : { width: boundry.right - boundry.left - 20, height: boundry.bottom - boundry.top - 20 }
+                });
+            }
+        });
+        this.command_queue.execute(command);
     },
 
     setSelectMode: function(name)
     {
         this.image_selection.resizeInteraction.setMode(name);
+    },
+
+    /**
+     * Returns our Kinetic.Stage instance.
+     */
+    getStage: function()
+    {
+        return this.stage;
+    },
+
+    /**
+     * Returns our Kinetic.Layer instance.
+     */
+    getLayer: function()
+    {
+        return this.layer;
+    },
+
+    /**
+     * Returns our Kinetic.Image instance that represents the currently loaded/drawn image.
+     */
+    getImage: function()
+    {
+        return this.image;
+    },
+
+    getImageBoundry: function()
+    {
+        return this.image_boundry;
     }
 };
 

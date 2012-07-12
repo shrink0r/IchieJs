@@ -224,7 +224,7 @@ ImageAreaSelection.prototype = {
         this.shapes_group.setDragBounds(this.calculateDragBounds());
 
         this.correctResizeHandlePositions();
-        this.resize_overlay.adaptSelection(selection);
+        this.resize_overlay.update();
         this.layer.draw();
     },
 

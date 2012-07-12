@@ -15,14 +15,16 @@ CommandQueue.prototype = {
     execute: function(command)
     {
         command.execute();
+        if (this.cursor !== this.commands.length)
+        {
+            this.commands = [];
+        }
         this.commands.push(command);
-        // @todo need to splice array so we dont have none executed state down our queue.
         this.cursor = this.commands.length;
     },
 
     redo: function()
     {
-        console.log(this.cursor);
         if (this.valid())
         {
             this.commands[this.cursor].execute();

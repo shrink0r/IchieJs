@@ -14,7 +14,6 @@ var ResizeInteraction = function()
     this.handles = null;
     this.last_mousepos = null;
     this.mode = null;
-    this.boundry = null;
 };
 
 ResizeInteraction.prototype = {
@@ -30,7 +29,6 @@ ResizeInteraction.prototype = {
         this.canvas = $(
             this.image_selection.getLayer().getCanvas()
         );
-        this.boundry = this.image_selection.getImageBoundry();
         this.mode = new DefaultMode();
         this.mode.init(this);
         this.last_mousepos = null;
@@ -128,7 +126,7 @@ ResizeInteraction.prototype = {
 
     getBoundry: function()
     {
-        return this.boundry;
+        return this.image_selection.getImageBoundry();
     },
 
     setMode: function(name)

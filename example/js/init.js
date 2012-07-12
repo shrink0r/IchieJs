@@ -33,6 +33,11 @@
             ichie.redo();
         });
 
+        $('.trigger-crop').click(function()
+        {
+            ichie.crop();
+        });
+
         $('.trigger-filter').click(function()
         {
             ichie.filter(

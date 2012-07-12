@@ -26,6 +26,8 @@ module.exports = function(grunt) {
           'src/LockedRatioMode.js', 
           'src/CommandQueue.js', 
           'src/FilterCommand.js',
+          'src/CropCommand.js',
+          'src/PasteCommand.js',
           'src/ImageFilters.js',
           'src/exports.js', 
           'src/closure_close'
