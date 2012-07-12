@@ -6,11 +6,11 @@ var keyHandler = (function(window, document, undefined){
     var identifyKey = function(ev){
         var code, key;
         if (ev.wich) {
-            code = ev.which
+            code = ev.which;
         }
         else if (ev.keyCode)
         {
-            code = ev.keyCode
+            code = ev.keyCode;
         }
         else
         {
@@ -38,7 +38,7 @@ var keyHandler = (function(window, document, undefined){
     var isKeyActive = function(key)
     {
         return (activeKeys.indexOf(key) >= 0);
-    }
+    };
 
     window.addEventListener('keydown', function(ev){
         var key = identifyKey(ev);
@@ -49,6 +49,7 @@ var keyHandler = (function(window, document, undefined){
 
         activeKeys.push(key);
     });
+
     window.addEventListener('keyup', function(ev){
         var key = identifyKey(ev);
         var idx = activeKeys.indexOf(key);
@@ -58,11 +59,9 @@ var keyHandler = (function(window, document, undefined){
         }
     });
 
-
-
     return {
         getActiveKeys: function() {
             return activeKeys;
         }
-    }
-})(window, document);
+    };
+}(window, document));
