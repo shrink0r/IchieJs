@@ -2,34 +2,37 @@
 var keyHandler = (function(window, document, undefined){
 
     var activeKeys = [];
+    var keyDownCallback = function(){};
+    var keyUpCallback = function(){};
+
+    var keyMap = {
+        13: 'ENTER',
+        16: 'SHIFT',
+        17: 'CTRL',
+        18: 'ALT',
+        37: 'LEFT',
+        38: 'UP',
+        39: 'RIGHT',
+        40: 'DOWN',
+        224: 'META'
+    };
 
     var identifyKey = function(ev){
         var code, key;
         if (ev.wich) {
             code = ev.which;
         }
-        else if (ev.keyCode)
-        {
+        else if (ev.keyCode) {
             code = ev.keyCode;
         }
-        else
-        {
+        else {
             return;
         }
 
-        switch (code)
-        {
-            case 16:
-                key = 'SHIFT';
-                break;
-            case 17:
-                key = 'CTRL';
-                break;
-            case 18:
-                key = 'ALT';
-                break;
-            default:
-                key = String.fromCharCode(code);
+        if (code in keyMap){
+            key = keyMap[code];
+        } else {
+            key = String.fromCharCode(code);
         }
 
         return key;
@@ -48,6 +51,7 @@ var keyHandler = (function(window, document, undefined){
         }
 
         activeKeys.push(key);
+        keyDownCallback(key);
     });
 
     window.addEventListener('keyup', function(ev){
@@ -57,11 +61,19 @@ var keyHandler = (function(window, document, undefined){
         if (idx >= 0) {
             activeKeys.splice(idx, 1);
         }
+        keyUpCallback(key);
     });
 
     return {
         getActiveKeys: function() {
             return activeKeys;
+        },
+        isKeyActive: isKeyActive,
+        onKeyDown: function(callback) {
+            keyDownCallback = callback;
+        },
+        onKeyUp: function(callback) {
+            keyUpCallback = callback;
         }
     };
 }(window, document));
