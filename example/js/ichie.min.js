@@ -1,6 +1,6 @@
 (function(exports, $, _) {
     var Kinetic = exports.Kinetic;
-/*global ImageAreaSelection:false, ImageFilters:false*/
+/*global ImageAreaSelection:false, CommandQueue:false, FilterCommand:false*/
 
 // -----------------------------------------------------------------------------
 //                          Ichie
@@ -14,10 +14,13 @@ var Ichie = function()
 {
     this.options = null;
     this.stage = null;
+    this.clipboard = null;
     this.layer = null;
     this.image = null;
     this.image_selection = null;
     this.image_boundry = null;
+    this.command_queue = new CommandQueue();
+    this.command_queue.init();
 };
 
 Ichie.prototype = {
@@ -131,18 +134,51 @@ Ichie.prototype = {
         return this.image_boundry;
     },
 
-    filter: function(name, options)
+    undo: function()
     {
-        var ctx = this.layer.getContext('2d');
+        this.command_queue.undo();
+    },
+
+    redo: function()
+    {
+        this.command_queue.redo();
+    },
+
+    copyCurrentSelection: function()
+    {
         var selection = this.image_selection.getSelection();
-        var imageData = ctx.getImageData(
+        this.clipboard = this.layer.getContext().getImageData(
             selection.left, 
             selection.top, 
             selection.right - selection.left, 
             selection.bottom - selection.top
         );
-        var filtered = ImageFilters[name](imageData);
-        ctx.putImageData(filtered, selection.left, selection.top);
+    },
+
+    pasteClipboard: function()
+    {
+        if (! this.clipboard) 
+        {
+            return;
+        }
+        var selection = this.image_selection.getSelection();
+        this.layer.getContext().putImageData(
+            this.clipboard,
+            selection.left, 
+            selection.top
+        );
+        this.clipboard = null;
+    },
+
+    filter: function(name, options)
+    {
+        var command = new FilterCommand();
+        command.init({
+            context: this.layer.getContext('2d'),
+            selection: this.image_selection.getSelection(),
+            filter_name: name
+        });
+        this.command_queue.execute(command);
     },
 
     crop: function()
@@ -989,26 +1025,104 @@ LockedRatioMode.prototype.determineResizeDirection = function(handle_index, delt
     return direction;
 };
 
-/*global Ichie:false, exports:false*/
+var CommandQueue = function()
+{
+    this.commands = null;
+    this.cursor = null;
+};
 
-// -----------------------------------------------------------------------------
-//                          EXPORTS SECTION
-// In this section you'll find all the methods/properties, that we expose.
-// -----------------------------------------------------------------------------
+CommandQueue.prototype = {
 
-exports.IchieJs = {
-    /**
-     * Takes a DOMElement that will serve as the container for Ichie's stage
-     * and returns a fresh and initialized Ichie instance.
-     */
-    create: function(container) 
+    init: function()
     {
-        var ichie = new Ichie();
-        ichie.init(container);
-        return ichie;
+        this.commands = [];
+        this.cursor = -1;
+    },
+
+    execute: function(command)
+    {
+        command.execute();
+        this.commands.push(command);
+        // @todo need to splice array so we dont have none executed state down our queue.
+        this.cursor = this.commands.length;
+    },
+
+    redo: function()
+    {
+        console.log(this.cursor);
+        if (this.valid())
+        {
+            this.commands[this.cursor].execute();
+            this.cursor++;
+        }
+    },
+
+    undo: function()
+    {
+        if (this.mayUndo())
+        {
+            this.cursor--;
+            this.commands[this.cursor].revert();
+        }
+    },
+
+    mayUndo: function()
+    {
+        return !!this.commands[this.cursor-1];
+    },
+
+    valid: function()
+    {
+        return !!this.commands[this.cursor];
     }
 };
 
+/*global ImageFilters:false*/
+
+var FilterCommand = function()
+{
+    this.filter_name = null;
+    this.ctx = null;
+    this.area = null;
+    this.original_data = null;
+};
+
+FilterCommand.prototype = {
+
+    init: function(options)
+    {
+        this.filter_name = options.filter_name;
+        this.ctx = options.context;
+        this.area = options.selection;
+    },
+
+    execute: function()
+    {
+        this.original_data = this.ctx.getImageData(
+            this.area.left, 
+            this.area.top, 
+            this.area.right - this.area.left, 
+            this.area.bottom - this.area.top
+        );
+        var imageData = this.ctx.getImageData(
+            this.area.left, 
+            this.area.top, 
+            this.area.right - this.area.left, 
+            this.area.bottom - this.area.top
+        );
+        var filtered = ImageFilters[this.filter_name](imageData);
+        this.ctx.putImageData(filtered, this.area.left, this.area.top);
+    },
+
+    revert: function()
+    {
+        this.ctx.putImageData(
+            this.original_data, 
+            this.area.left, 
+            this.area.top
+        );
+    }
+};
 /*
     https://github.com/arahaya/ImageFilters.js/blob/master/imagefilters.js
     
@@ -3065,6 +3179,26 @@ ImageFilters.Twril = function (srcImageData, centerX, centerY, radius, angle, ed
     }
 
     return dstImageData;
+};
+
+/*global Ichie:false, exports:false*/
+
+// -----------------------------------------------------------------------------
+//                          EXPORTS SECTION
+// In this section you'll find all the methods/properties, that we expose.
+// -----------------------------------------------------------------------------
+
+exports.IchieJs = {
+    /**
+     * Takes a DOMElement that will serve as the container for Ichie's stage
+     * and returns a fresh and initialized Ichie instance.
+     */
+    create: function(container) 
+    {
+        var ichie = new Ichie();
+        ichie.init(container);
+        return ichie;
+    }
 };
 
 })(typeof exports === 'object' && exports || this, $, _);

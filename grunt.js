@@ -24,8 +24,10 @@ module.exports = function(grunt) {
           'src/ResizeInteraction.js',
           'src/DefaultMode.js', 
           'src/LockedRatioMode.js', 
-          'src/exports.js', 
+          'src/CommandQueue.js', 
+          'src/FilterCommand.js',
           'src/ImageFilters.js',
+          'src/exports.js', 
           'src/closure_close'
         ],
         dest: 'dist/ichie.js'

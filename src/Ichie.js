@@ -1,4 +1,4 @@
-/*global ImageAreaSelection:false, ImageFilters:false*/
+/*global ImageAreaSelection:false, CommandQueue:false, FilterCommand:false*/
 
 // -----------------------------------------------------------------------------
 //                          Ichie
@@ -12,10 +12,13 @@ var Ichie = function()
 {
     this.options = null;
     this.stage = null;
+    this.clipboard = null;
     this.layer = null;
     this.image = null;
     this.image_selection = null;
     this.image_boundry = null;
+    this.command_queue = new CommandQueue();
+    this.command_queue.init();
 };
 
 Ichie.prototype = {
@@ -129,18 +132,51 @@ Ichie.prototype = {
         return this.image_boundry;
     },
 
-    filter: function(name, options)
+    undo: function()
     {
-        var ctx = this.layer.getContext('2d');
+        this.command_queue.undo();
+    },
+
+    redo: function()
+    {
+        this.command_queue.redo();
+    },
+
+    copyCurrentSelection: function()
+    {
         var selection = this.image_selection.getSelection();
-        var imageData = ctx.getImageData(
+        this.clipboard = this.layer.getContext().getImageData(
             selection.left, 
             selection.top, 
             selection.right - selection.left, 
             selection.bottom - selection.top
         );
-        var filtered = ImageFilters[name](imageData);
-        ctx.putImageData(filtered, selection.left, selection.top);
+    },
+
+    pasteClipboard: function()
+    {
+        if (! this.clipboard) 
+        {
+            return;
+        }
+        var selection = this.image_selection.getSelection();
+        this.layer.getContext().putImageData(
+            this.clipboard,
+            selection.left, 
+            selection.top
+        );
+        this.clipboard = null;
+    },
+
+    filter: function(name, options)
+    {
+        var command = new FilterCommand();
+        command.init({
+            context: this.layer.getContext('2d'),
+            selection: this.image_selection.getSelection(),
+            filter_name: name
+        });
+        this.command_queue.execute(command);
     },
 
     crop: function()

@@ -13,6 +13,26 @@
     {
         ichie.showSelection();
 
+        $('.trigger-copy').click(function()
+        {
+            ichie.copyCurrentSelection();
+        });
+
+        $('.trigger-paste').click(function()
+        {
+            ichie.pasteClipboard();
+        });
+
+        $('.trigger-undo').click(function()
+        {
+            ichie.undo();
+        });
+
+        $('.trigger-redo').click(function()
+        {
+            ichie.redo();
+        });
+
         $('.trigger-filter').click(function()
         {
             ichie.filter(
