@@ -40,10 +40,11 @@
             );
         });
 
-        $('#input-keep-ratio').change(function()
+        $('.trigger-keep-ratio').click(function()
         {
+            console.log($(this).hasClass('active'));
             ichie.setSelectMode(
-                $(this).is(':checked') ? 'ratio' : 'default'
+                $(this).hasClass('active') ? 'default' : 'ratio'
             );
         });
     });

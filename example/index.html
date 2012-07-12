@@ -24,51 +24,72 @@
             </div>
         </header>
 
-        <!-- HtmlDoc - Content -->
-        <div class="container-fluid container-content">
-            <h1 class="title">Basic usage example</h1>
-
-            <!-- A form holding options to control IchieJs -->
-            <form class="form-horizontal">
-                <fieldset>
-                    <legend>Tools/Options</legend>
-                    <div class="control-group">
-                        <label class="control-label" for="input-keep-ratio">Keep Ratio</label>
-                        <div class="controls">
-                            <input type="checkbox" class="input-xlarge" id="input-keep-ratio" checked="unchecked" />
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label">Filters</label>
-                        <div class="controls">
-                            <button type="button" class="btn trigger-filter" data-filter-name="GrayScale">GrayScale</button>
-                            <button type="button" class="btn trigger-filter" data-filter-name="Binarize">Binarize</button>
-                            <button type="button" class="btn trigger-filter" data-filter-name="GaussianBlur">GaussianBlur</button>
-                            <button type="button" class="btn trigger-filter" data-filter-name="Desaturate">Desaturate</button>
-                            <button type="button" class="btn trigger-filter" data-filter-name="Invert">Invert</button>
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label">Functions</label>
-                        <div class="controls">
-                            <button type="button" class="btn trigger-copy">Copy</button>
-                            <button type="button" class="btn trigger-paste">Paste</button>
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label">Navigate</label>
-                        <div class="controls">
-                            <button type="button" class="btn trigger-undo icon-step-backward"> Undo</button>
-                            <button type="button" class="btn trigger-redo icon-step-forward"> Redo</button>
-                        </div>
-                    </div>
-                </fieldset>
-            </form>
-
-            <!-- The container that we will pass to Ichie and where the stage will be injected.  -->
-            <div class="container-ichiejs"></div>
+        <div class="container-fluid">
+            <div class="row container-header">
+                <div class="span12">
+                    <h1 class="title">Basic usage example</h1>
+                </div>
+            </div>
         </div>
 
+        <!-- HtmlDoc - Content -->
+        <div class="container-fluid">
+            <div class="row container-content">
+
+                <section class="span12 container-filters">
+                    <h2>Filters</h2>
+                    <ul class="list-filters">
+                        <li>
+                            <a href="#" class="label label-info trigger-filter" data-filter-name="GrayScale">
+                                <span class="icon-filter"></span>GrayScale
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="label label-info trigger-filter" data-filter-name="Binarize">
+                                <span class="icon-filter"></span>Binarize
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="label label-info trigger-filter" data-filter-name="GaussianBlur">
+                                <span class="icon-filter"></span>GaussianBlur
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="label label-info trigger-filter" data-filter-name="Desaturate">
+                                <span class="icon-filter"></span>Desaturate
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="label label-info trigger-filter" data-filter-name="Invert">
+                                <span class="icon-filter"></span>Invert
+                            </a>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="span12 container-tools">
+                    <h2>Tools</h2>
+                    <div class="btn-group">
+                        <button class="btn trigger-undo icon-step-backward"> Undo</button>
+                        <button class="btn trigger-redo icon-step-forward"> Redo</button>
+                    </div>
+                    <div class="btn-group" data-toggle="buttons-radio">
+                        <button class="btn trigger-copy icon-copy"> Copy</button>
+                        <button class="btn trigger-paste active icon-paste"> Paste</button>
+                    </div>
+                    <button class="btn trigger-keep-ratio icon-lock" data-toggle="button"> Lock Ratio</button>
+                </section>
+
+            </div>
+
+            <div class="row">
+                <section class="span12">
+                 <!-- The container that we will pass to Ichie and where the stage will be injected.  -->
+                    <div class="container-ichiejs"></div>
+                </div>
+            </div>
+        </div>
+           
         <!-- HtmlDoc - Footer -->
         <footer class="container-fluid">
             <hr />

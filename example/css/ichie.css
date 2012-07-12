@@ -1,10 +1,60 @@
-.container-content
+.container-header
 {
     margin-top: 5em; 
-    margin-bottom: 4em;
+    margin-bottom: 3em;
+}
+
+.container-header h1
+{
+    text-decoration: underline;
+}
+
+.container-content
+{
+    margin-bottom: 3em;
+}
+
+.container-filters
+{
+    margin-bottom: 1em;
+}
+
+.container-ichiejs canvas
+{
+    border: 1px solid #ababab;
 }
 
 .container-content .title
 {
     margin-bottom: 0.5em;
+}
+
+.list-filters
+{
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.list-filters li
+{
+    padding: 0.5em;
+    float: left;
+    cursor: pointer;
+}
+
+.btn.active
+{
+    cursor: default;
+}
+
+.trigger-keep-ratio
+{
+    margin-left: 0.5em;
+}
+
+.container-tools .btn-group
+{
+    float: left;
+    margin-left: 0.5em;
 }
