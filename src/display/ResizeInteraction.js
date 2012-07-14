@@ -131,7 +131,7 @@ ResizeInteraction.prototype = {
 
     setMode: function(name)
     {
-        if ('ratio' === name)
+        if ('keep-ratio' === name)
         {
             this.mode = new LockedRatioMode();
         }

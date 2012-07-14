@@ -12,7 +12,7 @@
 
 var ImageAreaSelection = function()
 {
-    this.ichie = null;
+    this.display = null;
     this.stage = null;
     this.options = null;
     this.ratio = null;
@@ -22,6 +22,8 @@ var ImageAreaSelection = function()
     this.selection_rect = null;
     this.resizeInteraction = null;
     this.resize_overlay = null;
+    this.drag_bounds = null;
+    this.onchanged = null;
 };
 
 ImageAreaSelection.prototype = {
@@ -29,23 +31,26 @@ ImageAreaSelection.prototype = {
     /**
      * Sets up the gui and the ResizeInterAction that will make us resizeable.
      */
-    init: function(ichie, options)
+    init: function(display, options)
     {
-        this.ichie = ichie;
-        this.stage = ichie.getStage();
+        this.display = display;
+        this.stage = options.stage;
         this.options = $.extend({}, ImageAreaSelection.DEFAULT_OPTIONS, options || {});
 
-        // Create our selection rectangle.
         this.selection_rect = this.createSelectionRect();
-        this.ratio = this.selection_rect.getWidth() / this.selection_rect.getHeight();
-        // Create our resize (drag) handles.
         this.resize_handles = this.createResizeHandles();
-        // Group shapes_group together for more coding convenience.
         this.shapes_group = this.createShapesGroup();
-        // Finally add the group containing the select rect and the resize-handle rects to our layer...
+        this.ratio = this.selection_rect.getWidth() / this.selection_rect.getHeight(); // @todo make dynamic (settable)
+        this.setDragBounds({
+            top: 0,
+            right: this.stage.getWidth(),
+            bottom: this.stage.getHeight(),
+            left: 0
+        });
+
         this.layer = new Kinetic.Layer({
             id: 'selection-layer',
-            alpha: this.options.show ? 1 : 0
+            visible: this.options.show || false
         });
         this.layer.add(this.shapes_group);
         
@@ -56,7 +61,6 @@ ImageAreaSelection.prototype = {
         this.resize_overlay = new SelectionOverlay();
         this.resize_overlay.init(this);
 
-        // ... and add the layer to our stage, then hope the user will engage (ryhme ryhme)
         this.stage.add(this.layer);
     },
 
@@ -142,30 +146,24 @@ ImageAreaSelection.prototype = {
             x: (this.stage.getWidth() / 2) - (this.options.width / 2), // center the shapes_group on stage
             y: (this.stage.getHeight() / 2) - (this.options.height / 2)
         });
-        
-        shapes_group.setDragBounds(
-            this.calculateDragBounds() // lock the "shapes_group" to our image's dimensions
-        );
-        shapes_group.add(this.selection_rect);
 
-        _.each(this.resize_handles, function(handle) { shapes_group.add(handle); });
+        shapes_group.add(this.selection_rect);
+        _.each(this.resize_handles, function(handle) 
+        { 
+            shapes_group.add(handle); 
+        });
 
         return shapes_group;
     },
 
     /**
      * Calculates the bounds of the image which is currently loaded
-     * by the Ichie instance that we are bound to.
+     * by the main display.
      */
-    calculateDragBounds: function()
+    setDragBounds: function(drag_bounds)
     {
-        var boundry = this.getImageBoundry();
-        return {
-            top: boundry.top,
-            left: boundry.left,
-            right: boundry.right - this.selection_rect.getWidth(),
-            bottom: boundry.bottom - this.selection_rect.getHeight()
-        };
+        this.drag_bounds = drag_bounds;
+        this.shapes_group.setDragBounds(this.drag_bounds);
     },
 
     /**
@@ -191,16 +189,21 @@ ImageAreaSelection.prototype = {
      * that is currently selected.
      * The coords returned are relative to the image's current position.
      */ 
-    getSelection: function(relative)
+    getSelection: function(relative_to)
     {
-        if (true !== relative)
-        {
-            relative = false;
-        }
         var select_pos = this.selection_rect.getAbsolutePosition(),
-            img_pos = this.ichie.getImage().getAbsolutePosition(),
-            select_x = relative ? (select_pos.x - img_pos.x) : select_pos.x,
-            select_y = relative ? (select_pos.y - img_pos.y) : select_pos.y;
+            select_x, select_y;
+
+        if (typeof relative_to === 'object')
+        {
+            select_x = select_pos.x - relative_to.x;
+            select_y = select_pos.y - relative_to.y;
+        }
+        else
+        {
+            select_x = select_pos.x;
+            select_y = select_pos.y;
+        }
 
         return {
             top: select_y,
@@ -221,11 +224,17 @@ ImageAreaSelection.prototype = {
 
         this.shapes_group.setX(selection.pos.x);
         this.shapes_group.setY(selection.pos.y);
-        this.shapes_group.setDragBounds(this.calculateDragBounds());
 
         this.correctResizeHandlePositions();
         this.resize_overlay.update();
+
+        this.options.onchanged(selection);
         this.layer.draw();
+    },
+
+    setResizeMode: function(mode_name)
+    {
+        this.resizeInteraction.setMode(mode_name);
     },
 
     /**
@@ -247,7 +256,7 @@ ImageAreaSelection.prototype = {
 
     getImageBoundry: function()
     {
-        return this.ichie.getImageBoundry();
+        return this.display.getImageBoundry();
     },
 
     /**
@@ -263,7 +272,7 @@ ImageAreaSelection.prototype = {
      */
     show: function()
     {
-        this.layer.setAlpha(1);
+        this.layer.show();
         this.layer.draw();
     },
 
@@ -272,7 +281,7 @@ ImageAreaSelection.prototype = {
      */
     hide: function()
     {
-        this.layer.setAlpha(0);
+        this.layer.hide();
         this.layer.draw();
     }
 };
@@ -307,5 +316,6 @@ ImageAreaSelection.DEFAULT_OPTIONS = {
     show: false,
     stroke: "white",
     stroke_width: 2,
-    keep_ratio: false
+    keep_ratio: false,
+    onchanged: function(){}
 };

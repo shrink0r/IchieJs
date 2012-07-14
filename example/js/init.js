@@ -6,16 +6,20 @@
  */
 (function(exports, $)
 {
-    var ichie = exports.IchieJs.create(
-        $('.container-ichiejs').first()[0]
-    );
-    ichie.launch('images/vader2.jpg', function()
+    var ichie = exports.IchieJs.create({
+        main_container: '.ichiejs-main-stage',
+        preview_container: '.ichiejs-preview-stage',
+        width: 550,
+        height: 350
+    });
+
+    ichie.launch('images/Kitten_Desktop.jpg', function()
     {
         ichie.showSelection();
 
         $('.trigger-copy').click(function()
         {
-            ichie.copyCurrentSelection();
+            ichie.copySelection();
         });
 
         $('.trigger-paste').click(function()
@@ -38,6 +42,16 @@
             ichie.crop();
         });
 
+        $('.trigger-download').click(function()
+        {
+            ichie.downloadAsImage();
+        });
+
+        $('.trigger-resize').click(function()
+        {
+            $('#resize-modal').modal('show');
+        });
+
         $('.trigger-filter').click(function()
         {
             ichie.filter(
@@ -47,9 +61,8 @@
 
         $('.trigger-keep-ratio').click(function()
         {
-            console.log($(this).hasClass('active'));
             ichie.setSelectMode(
-                $(this).hasClass('active') ? 'default' : 'ratio'
+                $(this).hasClass('active') ? 'default' : 'keep-ratio'
             );
         });
     });

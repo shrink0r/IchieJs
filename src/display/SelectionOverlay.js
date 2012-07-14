@@ -14,7 +14,7 @@ SelectionOverlay.prototype = {
             alpha: 0.5
         });
 
-        var boundry = this.image_selection.getImageBoundry();
+        var boundry = this.image_selection.drag_bounds;
         this.shapes = {
             north: new Kinetic.Rect({
                 fill: 'grey',

@@ -1,6 +1,6 @@
 (function(exports, $, _) {
     var Kinetic = exports.Kinetic;
-/*global ImageAreaSelection:false, CommandQueue:false, FilterCommand:false, CropCommand:false, PasteCommand:false*/
+/*global ImageAreaSelection:false, CommandQueue:false, FilterCommand:false, CropCommand:false, PasteCommand:false, PreviewDisplay: false, MainDisplay:false*/
 
 // -----------------------------------------------------------------------------
 //                          Ichie
@@ -13,14 +13,11 @@
 var Ichie = function()
 {
     this.options = null;
-    this.stage = null;
     this.clipboard = null;
-    this.layer = null;
-    this.image = null;
-    this.image_selection = null;
-    this.image_boundry = null;
-    this.command_queue = new CommandQueue();
-    this.command_queue.init();
+    this.main_display = null;
+    this.preview_display = null;
+    this.working_canvas = null;
+    this.command_queue = null;
 };
 
 Ichie.prototype = {
@@ -28,18 +25,26 @@ Ichie.prototype = {
     /**
      * Gets this instance prepared for loading an image and kicking off the editing process.
      */
-    init: function(container, options)
+    init: function(options)
     {
         this.options = $.extend({}, Ichie.DEFAULT_OPTIONS, options || {});
-        this.image_selection = new ImageAreaSelection();
-        this.layer = new Kinetic.Layer({ id: 'image-layer' });
-        this.stage = new Kinetic.Stage({
-          container: container,
-          width: this.options.width,
-          height: this.options.height
+
+        this.main_display = new MainDisplay();
+        this.main_display.init({
+            container: this.options.main_container,
+            width: this.options.width,
+            height: this.options.height
         });
 
-        this.stage.add(this.layer);
+        this.preview_display = new PreviewDisplay();
+        this.preview_display.init({
+            container: this.options.preview_container
+        });
+
+        this.working_canvas = document.createElement("canvas");
+
+        this.command_queue = new CommandQueue();
+        this.command_queue.init();
     },
 
     /**
@@ -51,58 +56,44 @@ Ichie.prototype = {
 
         image.onload = function()
         {
-            that.image = new Kinetic.Image({
-                id: 'src-image'
-            });
-            that.layer.add(that.image);
-            that.onImageLoaded(image);
-
-            var img_pos = that.image.getAbsolutePosition();
-            that.image_boundry = {
-                top: Math.floor(img_pos.y),
-                right: Math.ceil(img_pos.x + that.image.getWidth()),
-                bottom: Math.ceil(img_pos.y + that.image.getHeight()),
-                left: Math.floor(img_pos.x)
-            };
-
-            that.image_selection.init(that, {
-                width: that.options.width / 2,
-                height: that.options.height / 2
-            });
-
+            that.onImageProcessed(image);
             ready_hook();
         };
         image.src = image_source;
     },
 
-    onImageLoaded: function(image)
+    onImageProcessed: function(image)
     {
+        console.log("PROCESSED YAY");
         var width = image.naturalWidth, 
             height = image.naturalHeight,
-            x = this.stage.getWidth() / 2 - (width / 2),
-            y = this.stage.getHeight() / 2 - (height / 2);
+            working_ctx = this.working_canvas.getContext("2d"),
+            adopt_size = (this.working_canvas.width !== width) || 
+            (this.working_canvas.height !== height);
 
-        this.image.setHeight(height);
-        this.image.setWidth(width);
-        this.image.setX(x);
-        this.image.setY(y);
-        this.image.setImage(image);
-        this.image_boundry = {
-            top: Math.floor(y),
-            right: Math.ceil(x + width),
-            bottom: Math.ceil(y + height),
-            left: Math.floor(x)
-        };
-
-        this.layer.draw();
+        if (adopt_size)
+        {
+            this.working_canvas.width = width;
+            this.working_canvas.height = height;
+        }
+        
+        working_ctx.drawImage(image, 0, 0);
+        this.main_display.setImage(image, adopt_size);
+        this.preview_display.setImage(image, adopt_size);
     },
+
+    /**
+     * -------------------------------------------------------
+     * PUBLIC API STARTS HERE, ALL PREVIOUS METHODS ARE TO BE CONSIDERED PRIVATE!
+     * -------------------------------------------------------
+     */
 
     /**
      * Shows the currently image selection.
      */
     showSelection: function()
     {
-        this.image_selection.show();
+        this.main_display.showSelection();
     },
 
     /**
@@ -110,7 +101,119 @@ Ichie.prototype = {
      */
     hideSelection: function()
     {
-        this.image_selection.hide();
+        this.main_display.hideSelection();
+    },
+
+    /**
+     * Set the resize mode to use when resizing our current selection.
+     * Atm you may choose between 'default' and 'keep-ratio'.
+     */
+    setSelectMode: function(name)
+    {
+        this.main_display.setSelectMode(name);
+    },
+
+    /**
+     * Copy the currently selected image are to Ichie's clipboard.
+     */
+    copySelection: function()
+    {
+        var selection = this.main_display.getCurrentSelection();
+        this.clipboard = this.working_canvas.getContext('2d').getImageData(
+            selection.left, 
+            selection.top, 
+            selection.right - selection.left, 
+            selection.bottom - selection.top
+        );
+    },
+
+    /**
+     * Send the current state of our image to the browser,
+     * so the user may download it.
+     */
+    downloadAsImage: function()
+    {
+        var data_url = this.working_canvas.toDataURL('image/png');
+        data_url = data_url.replace("image/png", "image/octet-stream");
+        document.location.href = data_url;
+    },
+
+    /**
+     * Returns our Kinetic.Stage instance.
+     */
+    getStage: function()
+    {
+        return this.main_display.getStage();
+    },
+
+    /**
+     * Returns our Kinetic.Layer instance.
+     */
+    getLayer: function()
+    {
+        return this.main_display.getLayer();
+    },
+
+    /**
+     * Returns our Kinetic.Image instance.
+     */
+    getImage: function()
+    {
+        return this.main_display.getImage();
+    },
+
+    /*
+     * These methods actually alter our image's state.
+     * Our image's state may only be altered inside of commands,
+     * which are required to implement consistent execute and revert methods.
+     */
+
+    pasteClipboard: function()
+    {
+        if (! this.clipboard) 
+        {
+            return;
+        }
+        var command = new PasteCommand(),
+            selection = this.main_display.getCurrentSelection(),
+            that = this;
+
+        command.init(this.working_canvas, {
+            data: this.clipboard,
+            coords: { x: selection.left, y: selection.top },
+            onexecuted: this.onImageProcessed.bind(this)
+        });
+
+        this.command_queue.execute(command);
+        // @todo backup clipboard data, so we can paste the same stuff multiple times
+        this.clipboard = null;
+    },
+
+    filter: function(filter_name, options)
+    {
+        var command = new FilterCommand(), 
+            that = this;
+
+        command.init(this.working_canvas, {
+            filter: filter_name,
+            bounds: this.main_display.getCurrentSelection(),
+            onexecuted: this.onImageProcessed.bind(this)
+        });
+
+        this.command_queue.execute(command);
+    },
+
+    crop: function()
+    {
+        var command = new CropCommand(),
+            that = this;
+
+        command.init(this.working_canvas, {
+            bounds: this.main_display.getCurrentSelection(),
+            onexecuted: that.onImageProcessed.bind(this)
+        });
+
+        this.command_queue.execute(command);
     },
 
     undo: function()
@@ -121,99 +224,6 @@ Ichie.prototype = {
     redo: function()
     {
         this.command_queue.redo();
-    },
-
-    copyCurrentSelection: function()
-    {
-        var selection = this.image_selection.getSelection();
-        this.clipboard = this.layer.getContext().getImageData(
-            selection.left, 
-            selection.top, 
-            selection.right - selection.left, 
-            selection.bottom - selection.top
-        );
-    },
-
-    pasteClipboard: function()
-    {
-        if (! this.clipboard) 
-        {
-            return;
-        }
-        var command = new PasteCommand();
-        command.init({
-            canvas: this.layer.getCanvas(),
-            selection: this.image_selection.getSelection(),
-            data: this.clipboard
-        });
-        this.command_queue.execute(command);
-        this.clipboard = null;
-    },
-
-    filter: function(name, options)
-    {
-        var command = new FilterCommand();
-        command.init({
-            context: this.layer.getContext('2d'),
-            selection: this.image_selection.getSelection(),
-            filter_name: name
-        });
-        this.command_queue.execute(command);
-    },
-
-    crop: function()
-    {
-        var command = new CropCommand();
-        var that = this;
-        command.init({
-            context: this.layer.getContext(),
-            selection: this.image_selection.getSelection(),
-            image_bounds: this.getImageBoundry(),
-            onexecuted: function(image)
-            {
-                that.onImageLoaded(image);
-                var boundry = that.getImageBoundry();
-                that.image_selection.setSelection({
-                    pos: { x: boundry.left + 10, y: boundry.top + 10 },
-                    dim : { width: boundry.right - boundry.left - 20, height: boundry.bottom - boundry.top - 20 }
-                });
-            }
-        });
-        this.command_queue.execute(command);
-    },
-
-    setSelectMode: function(name)
-    {
-        this.image_selection.resizeInteraction.setMode(name);
-    },
-
-    /**
-     * Returns our Kinetic.Stage instance.
-     */
-    getStage: function()
-    {
-        return this.stage;
-    },
-
-    /**
-     * Returns our Kinetic.Layer instance.
-     */
-    getLayer: function()
-    {
-        return this.layer;
-    },
-
-    /**
-     * Returns our Kinetic.Image instance that represents the currently loaded/drawn image.
-     */
-    getImage: function()
-    {
-        return this.image;
-    },
-
-    getImageBoundry: function()
-    {
-        return this.image_boundry;
     }
 };
 
@@ -227,6 +237,250 @@ Ichie.DEFAULT_OPTIONS = {
     height: 300
 };
 
+var CommandQueue = function()
+{
+    this.commands = null;
+    this.cursor = null;
+};
+
+CommandQueue.prototype = {
+
+    init: function()
+    {
+        this.commands = [];
+        this.cursor = -1;
+    },
+
+    execute: function(command)
+    {
+        command.execute();
+        if (this.cursor !== this.commands.length)
+        {
+            this.commands = [];
+        }
+        this.commands.push(command);
+        this.cursor = this.commands.length;
+    },
+
+    redo: function()
+    {
+        if (this.valid())
+        {
+            this.commands[this.cursor].execute();
+            this.cursor++;
+        }
+    },
+
+    undo: function()
+    {
+        if (this.mayUndo())
+        {
+            this.cursor--;
+            this.commands[this.cursor].revert();
+        }
+    },
+
+    mayUndo: function()
+    {
+        return !!this.commands[this.cursor-1];
+    },
+
+    valid: function()
+    {
+        return !!this.commands[this.cursor];
+    }
+};
+
+/*global ImageFilters:false*/
+
+var FilterCommand = function()
+{
+    this.canvas = null;
+    this.ctx = null;
+    this.original_data = null;
+};
+
+FilterCommand.prototype = {
+
+    init: function(canvas, options)
+    {
+        this.options = $.extend({}, FilterCommand.DEFAULT_OPTIONS, options || {});
+        this.canvas = canvas;
+        this.ctx = this.canvas.getContext('2d');
+    },
+
+    execute: function()
+    {
+        var x = this.options.bounds.left,
+            y = this.options.bounds.top,
+            width = this.options.bounds.right - this.options.bounds.left,
+            height = this.options.bounds.bottom - this.options.bounds.top,
+            image_data = this.ctx.getImageData(x, y, width, height);
+            
+        this.original_data = this.ctx.getImageData(x, y, width, height);
+
+        var filtered = ImageFilters[this.options.filter](image_data);
+        this.ctx.putImageData(filtered, x, y);
+
+        this.onExecuted(this.canvas);
+    },
+
+    revert: function()
+    {
+        this.ctx.putImageData(
+            this.original_data, 
+            this.options.bounds.left, 
+            this.options.bounds.top
+        );
+        
+        this.onExecuted(this.canvas);
+    },
+
+    onExecuted: function(canvas)
+    {
+        var image = new Image(),
+            that = this;
+        image.onload = function()
+        {
+            that.options.onexecuted(image);
+        };
+        image.src = canvas.toDataURL();
+    }
+};
+
+FilterCommand.DEFAULT_OPTIONS = {
+    onexecuted: function() {}    
+};
+
+var CropCommand = function()
+{
+    this.canvas = null;
+    this.ctx = null;
+    this.original_data = null;
+};
+
+CropCommand.prototype = {
+
+    init: function(canvas, options)
+    {
+        this.options = $.extend({}, CropCommand.DEFAULT_OPTIONS, options || {});
+        this.canvas = canvas;
+        this.ctx = this.canvas.getContext('2d');
+    },
+
+    execute: function()
+    {
+        this.original_data = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+
+        var x = this.options.bounds.left,
+            y = this.options.bounds.top,
+            width = this.options.bounds.right - this.options.bounds.left,
+            height = this.options.bounds.bottom - this.options.bounds.top,
+            cropped_data = this.ctx.getImageData(x, y, width, height);
+
+        var canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        var tmp_ctx = canvas.getContext("2d");
+        tmp_ctx.putImageData(cropped_data, 0, 0);
+
+        this.onExecuted(canvas);
+    },
+
+    revert: function()
+    {
+        var canvas = document.createElement("canvas");
+        canvas.width = this.original_data.width;
+        canvas.height = this.original_data.height;
+        var tmp_ctx = canvas.getContext("2d");
+        tmp_ctx.putImageData(this.original_data, 0, 0);
+
+        this.onExecuted(canvas);
+    },
+
+    onExecuted: function(canvas)
+    {
+        var image = new Image(),
+            that = this;
+        image.onload = function()
+        {
+            that.options.onexecuted(image);
+        };
+        image.src = canvas.toDataURL();
+    }
+};
+
+CropCommand.DEFAULT_OPTIONS = {
+    onexecuted: function() {}    
+};
+/*global ImageFilters:false */
+
+var PasteCommand = function()
+{
+    this.canvas = null;
+    this.ctx = null;
+    this.original_data = null;
+};
+
+PasteCommand.prototype = {
+
+    init: function(canvas, options)
+    {
+        this.options = $.extend({}, PasteCommand.DEFAULT_OPTIONS, options || {});
+        this.canvas = canvas;
+        this.ctx = this.canvas.getContext("2d");
+    },
+
+    execute: function()
+    {
+        var data_copy = this.ctx.createImageData(
+            this.options.data.width,
+            this.options.data.height
+        );
+        ImageFilters.Copy(this.options.data, data_copy);
+
+        this.original_data = this.ctx.getImageData(
+            this.options.coords.x,
+            this.options.coords.y,
+            this.options.data.width,
+            this.options.data.height
+        );
+
+        this.ctx.putImageData(
+            this.options.data,
+            this.options.coords.x, 
+            this.options.coords.y
+        );
+
+        this.options.data = data_copy;
+        this.onExecuted(this.canvas);
+    },
+
+    revert: function()
+    {
+        this.ctx.putImageData(
+            this.original_data,
+            this.options.coords.x, 
+            this.options.coords.y
+        );
+        this.onExecuted(this.canvas);
+    },
+
+    onExecuted: function(canvas)
+    {
+        var image = new Image(),
+            that = this;
+        image.onload = function()
+        {
+            that.options.onexecuted(image);
+        };
+        image.src = canvas.toDataURL();
+    }
+};
+
+PasteCommand.DEFAULT_OPTIONS = {
+    onexecuted: function() {}
+};
 /*global ResizeInteraction:false, SelectionOverlay:false*/
 
 // -----------------------------------------------------------------------------
@@ -241,7 +495,7 @@ Ichie.DEFAULT_OPTIONS = {
 
 var ImageAreaSelection = function()
 {
-    this.ichie = null;
+    this.display = null;
     this.stage = null;
     this.options = null;
     this.ratio = null;
@@ -251,6 +505,8 @@ var ImageAreaSelection = function()
     this.selection_rect = null;
     this.resizeInteraction = null;
     this.resize_overlay = null;
+    this.drag_bounds = null;
+    this.onchanged = null;
 };
 
 ImageAreaSelection.prototype = {
@@ -258,23 +514,26 @@ ImageAreaSelection.prototype = {
     /**
      * Sets up the gui and the ResizeInterAction that will make us resizeable.
      */
-    init: function(ichie, options)
+    init: function(display, options)
     {
-        this.ichie = ichie;
-        this.stage = ichie.getStage();
+        this.display = display;
+        this.stage = options.stage;
         this.options = $.extend({}, ImageAreaSelection.DEFAULT_OPTIONS, options || {});
 
-        // Create our selection rectangle.
         this.selection_rect = this.createSelectionRect();
-        this.ratio = this.selection_rect.getWidth() / this.selection_rect.getHeight();
-        // Create our resize (drag) handles.
         this.resize_handles = this.createResizeHandles();
-        // Group shapes_group together for more coding convenience.
         this.shapes_group = this.createShapesGroup();
-        // Finally add the group containing the select rect and the resize-handle rects to our layer...
+        this.ratio = this.selection_rect.getWidth() / this.selection_rect.getHeight(); // @todo make dynamic (settable)
+        this.setDragBounds({
+            top: 0,
+            right: this.stage.getWidth(),
+            bottom: this.stage.getHeight(),
+            left: 0
+        });
+
         this.layer = new Kinetic.Layer({
             id: 'selection-layer',
-            alpha: this.options.show ? 1 : 0
+            visible: this.options.show || false
         });
         this.layer.add(this.shapes_group);
         
@@ -285,7 +544,6 @@ ImageAreaSelection.prototype = {
         this.resize_overlay = new SelectionOverlay();
         this.resize_overlay.init(this);
 
-        // ... and add the layer to our stage, then hope the user will engage (ryhme ryhme)
         this.stage.add(this.layer);
     },
 
@@ -371,30 +629,24 @@ ImageAreaSelection.prototype = {
             x: (this.stage.getWidth() / 2) - (this.options.width / 2), // center the shapes_group on stage
             y: (this.stage.getHeight() / 2) - (this.options.height / 2)
         });
-        
-        shapes_group.setDragBounds(
-            this.calculateDragBounds() // lock the "shapes_group" to our image's dimensions
-        );
-        shapes_group.add(this.selection_rect);
 
-        _.each(this.resize_handles, function(handle) { shapes_group.add(handle); });
+        shapes_group.add(this.selection_rect);
+        _.each(this.resize_handles, function(handle) 
+        { 
+            shapes_group.add(handle); 
+        });
 
         return shapes_group;
     },
 
     /**
      * Calculates the bounds of the image which is currently loaded
-     * by the Ichie instance that we are bound to.
+     * by the main display.
      */
-    calculateDragBounds: function()
+    setDragBounds: function(drag_bounds)
     {
-        var boundry = this.getImageBoundry();
-        return {
-            top: boundry.top,
-            left: boundry.left,
-            right: boundry.right - this.selection_rect.getWidth(),
-            bottom: boundry.bottom - this.selection_rect.getHeight()
-        };
+        this.drag_bounds = drag_bounds;
+        this.shapes_group.setDragBounds(this.drag_bounds);
     },
 
     /**
@@ -420,16 +672,21 @@ ImageAreaSelection.prototype = {
      * that is currently selected.
      * The coords returned are relative to the image's current position.
      */ 
-    getSelection: function(relative)
+    getSelection: function(relative_to)
     {
-        if (true !== relative)
-        {
-            relative = false;
-        }
         var select_pos = this.selection_rect.getAbsolutePosition(),
-            img_pos = this.ichie.getImage().getAbsolutePosition(),
-            select_x = relative ? (select_pos.x - img_pos.x) : select_pos.x,
-            select_y = relative ? (select_pos.y - img_pos.y) : select_pos.y;
+            select_x, select_y;
+
+        if (typeof relative_to === 'object')
+        {
+            select_x = select_pos.x - relative_to.x;
+            select_y = select_pos.y - relative_to.y;
+        }
+        else
+        {
+            select_x = select_pos.x;
+            select_y = select_pos.y;
+        }
 
         return {
             top: select_y,
@@ -450,11 +707,17 @@ ImageAreaSelection.prototype = {
 
         this.shapes_group.setX(selection.pos.x);
         this.shapes_group.setY(selection.pos.y);
-        this.shapes_group.setDragBounds(this.calculateDragBounds());
 
         this.correctResizeHandlePositions();
         this.resize_overlay.update();
+
+        this.options.onchanged(selection);
         this.layer.draw();
+    },
+
+    setResizeMode: function(mode_name)
+    {
+        this.resizeInteraction.setMode(mode_name);
     },
 
     /**
@@ -476,7 +739,7 @@ ImageAreaSelection.prototype = {
 
     getImageBoundry: function()
     {
-        return this.ichie.getImageBoundry();
+        return this.display.getImageBoundry();
     },
 
     /**
@@ -492,7 +755,7 @@ ImageAreaSelection.prototype = {
      */
     show: function()
     {
-        this.layer.setAlpha(1);
+        this.layer.show();
         this.layer.draw();
     },
 
@@ -501,7 +764,7 @@ ImageAreaSelection.prototype = {
      */
     hide: function()
     {
-        this.layer.setAlpha(0);
+        this.layer.hide();
         this.layer.draw();
     }
 };
@@ -536,7 +799,8 @@ ImageAreaSelection.DEFAULT_OPTIONS = {
     show: false,
     stroke: "white",
     stroke_width: 2,
-    keep_ratio: false
+    keep_ratio: false,
+    onchanged: function(){}
 };
 
 var SelectionOverlay = function()
@@ -555,7 +819,7 @@ SelectionOverlay.prototype = {
             alpha: 0.5
         });
 
-        var boundry = this.image_selection.getImageBoundry();
+        var boundry = this.image_selection.drag_bounds;
         this.shapes = {
             north: new Kinetic.Rect({
                 fill: 'grey',
@@ -756,7 +1020,7 @@ ResizeInteraction.prototype = {
 
     setMode: function(name)
     {
-        if ('ratio' === name)
+        if ('keep-ratio' === name)
         {
             this.mode = new LockedRatioMode();
         }
@@ -1051,231 +1315,317 @@ LockedRatioMode.prototype.determineResizeDirection = function(handle_index, delt
     return direction;
 };
 
-var CommandQueue = function()
+/*global ImageFilters: false, ImageAreaSelection:false*/
+var MainDisplay = function()
 {
-    this.commands = null;
-    this.cursor = null;
+    this.stage = null;
+    this.layer = null;
+    this.image = null;
+    this.scale_x = 1;
+    this.scale_y = 1;
+    this.image_selection = null;
+    this.image_boundry = null;
 };
 
-CommandQueue.prototype = {
-
-    init: function()
-    {
-        this.commands = [];
-        this.cursor = -1;
-    },
-
-    execute: function(command)
-    {
-        command.execute();
-        if (this.cursor !== this.commands.length)
-        {
-            this.commands = [];
-        }
-        this.commands.push(command);
-        this.cursor = this.commands.length;
-    },
-
-    redo: function()
-    {
-        if (this.valid())
-        {
-            this.commands[this.cursor].execute();
-            this.cursor++;
-        }
-    },
-
-    undo: function()
-    {
-        if (this.mayUndo())
-        {
-            this.cursor--;
-            this.commands[this.cursor].revert();
-        }
-    },
-
-    mayUndo: function()
-    {
-        return !!this.commands[this.cursor-1];
-    },
-
-    valid: function()
-    {
-        return !!this.commands[this.cursor];
-    }
-};
-
-/*global ImageFilters:false*/
-
-var FilterCommand = function()
-{
-    this.filter_name = null;
-    this.ctx = null;
-    this.area = null;
-    this.original_data = null;
-};
-
-FilterCommand.prototype = {
+MainDisplay.prototype = {
 
     init: function(options)
     {
-        this.filter_name = options.filter_name;
-        this.ctx = options.context;
-        this.area = options.selection;
-    },
+        this.options = $.extend({}, MainDisplay.DEFAULT_OPTIONS, options || {});
+        this.options.container = $(this.options.container).first();
 
-    execute: function()
-    {
-        this.original_data = this.ctx.getImageData(
-            this.area.left, 
-            this.area.top, 
-            this.area.right - this.area.left, 
-            this.area.bottom - this.area.top
-        );
-        var imageData = this.ctx.getImageData(
-            this.area.left, 
-            this.area.top, 
-            this.area.right - this.area.left, 
-            this.area.bottom - this.area.top
-        );
-        var filtered = ImageFilters[this.filter_name](imageData);
-        this.ctx.putImageData(filtered, this.area.left, this.area.top);
-    },
+        this.stage = new Kinetic.Stage({
+            width: this.options.width,
+            height: this.options.height,
+            container: this.options.container[0]
+        });
 
-    revert: function()
-    {
-        this.ctx.putImageData(
-            this.original_data, 
-            this.area.left, 
-            this.area.top
-        );
-    }
-};
+        this.layer = new Kinetic.Layer({ id: 'image-layer' });
+        this.image = new Kinetic.Image({ id: 'preview-image' });
+        this.layer.add(this.image);
+        this.stage.add(this.layer);
 
-var CropCommand = function()
-{
-    this.area = null;
-    this.canvas_bounds = null;
-    this.ctx = null;
-    this.original_data = null;
-    this.onexecuted = null;
-};
+        this.image_selection = new ImageAreaSelection();
+        this.image_selection.init(this, {
+            stage: this.stage,
+            width: options.select_width || this.stage.getWidth(),
+            height: options.select_height || this.stage.getHeight(),
+            onchanged: this.onSelectionChanged.bind(this)
+        });
 
-CropCommand.prototype = {
-
-    init: function(options)
-    {
-        this.area = options.selection;
-        this.image_bounds = options.image_bounds;
-        this.ctx = options.context;
-        this.onexecuted = options.onexecuted;
-    },
-
-    execute: function()
-    {
-        this.original_data = this.ctx.getImageData(
-            this.image_bounds.left, 
-            this.image_bounds.top, 
-            this.image_bounds.right - this.image_bounds.left, 
-            this.image_bounds.bottom - this.image_bounds.top
-        );
-        var img_data = this.ctx.getImageData(
-            this.area.left, 
-            this.area.top,
-            this.area.right - this.area.left, 
-            this.area.bottom - this.area.top
-        );
-
-        var canvas = document.createElement("canvas");
-        canvas.width = this.area.right - this.area.left;
-        canvas.height = this.area.bottom - this.area.top;
-        var tmp_ctx = canvas.getContext("2d");
-        tmp_ctx.putImageData(img_data, 0, 0);
-
-        var image = new Image();
         var that = this;
-        image.onload = function()
+        $(this.stage.getDOM()).mousewheel(function(event, delta, deltaX, deltaY)
         {
-            that.onexecuted(image);
-        };
-        image.src = canvas.toDataURL();
+            var ratio = that.image.getWidth() / that.image.getHeight(),
+                new_height = that.image.getHeight() + deltaY;
+            that.image.setHeight(new_height);
+            that.image.setWidth(new_height * ratio);
+            that.layer.draw();
+            return false;
+        });
     },
 
-    revert: function()
+    onSelectionChanged: function(selection)
     {
-        var canvas = document.createElement("canvas");
-        canvas.width = this.image_bounds.right - this.image_bounds.left;
-        canvas.height = this.image_bounds.bottom - this.image_bounds.top;
-        var tmp_ctx = canvas.getContext("2d");
-        tmp_ctx.putImageData(this.original_data, 0, 0);
+        var image_dim = this.clipDimensions({
+            x: this.image.getX(),
+            y: this.image.getY(),
+            height: this.image.getHeight(), 
+            width: this.image.getWidth()
+        }); // make sure are drag bounds are never greater than our stage's (canvas) bounds.
+        this.image_selection.setDragBounds({
+            top: image_dim.y,
+            right: image_dim.width + image_dim.x - selection.dim.width,
+            bottom: image_dim.height + image_dim.y - selection.dim.height,
+            left: image_dim.x
+        });
+    },
 
-        var image = new Image();
-        var that = this;
-        image.onload = function()
+    setImage: function(image, adopt)
+    {
+        this.image.setImage(image);
+
+        if (true === adopt)
         {
-            that.onexecuted(image);
+            this.adjustImageDimensions(image);
+        }
+
+        this.layer.draw();
+    },
+
+    adjustImageDimensions: function(image)
+    {
+        var width = image.naturalWidth,
+            height = image.naturalHeight,
+            ratio = width / height,
+            stg_width = this.stage.getWidth(),
+            stg_height = this.stage.getHeight();
+        if (1 >= ratio && stg_width < width)
+        {
+            this.scale_x = width / stg_width;
+            width = stg_width;
+            var new_height = width / ratio;
+            this.scale_y = height / new_height;
+            height = new_height;
+        }
+        else if (stg_height < height)
+        {
+            this.scale_y = height / stg_height;
+            height = stg_height;
+            var new_width = height * ratio;
+            this.scale_x = width / new_width;
+            width = new_width;
+        }
+        this.image.setHeight(height);
+        this.image.setWidth(width);
+
+        var x = stg_width / 2 - (width / 2),
+            y = stg_height / 2 - (height / 2);
+        this.image.setX(x);
+        this.image.setY(y);
+
+        this.image_boundry = {
+            top: Math.floor(y),
+            right: Math.ceil(x + width),
+            bottom: Math.ceil(y + height),
+            left: Math.floor(x)
         };
-        image.src = canvas.toDataURL();
+
+        this.image_selection.setSelection({
+            dim : { width : this.image.getWidth(), height: this.image.getHeight() },
+            pos: { x: this.image.getX(), y: this.image.getY() }
+        });
+    },
+
+    clipDimensions: function(dimensions)
+    {
+        var stg_width = this.stage.getWidth(),
+            stg_height = this.stage.getHeight(),
+            ratio = dimensions.width / dimensions.height,
+            width, height, x, y;
+
+        if (1 < ratio)
+        {
+            height = dimensions.height > stg_height ? stg_height : dimensions.height;
+            width = height * ratio;
+        }
+        else
+        {
+            width = dimensions.width > stg_width ? stg_width : dimensions.width;
+            height = width / ratio;
+        }
+
+        if (0 > dimensions.x)
+        {
+            x = 0;
+        }
+        else if(stg_width < dimensions.x + width)
+        {
+            x = stg_width;
+        }
+        else
+        {
+            x = dimensions.x;
+        }
+
+        if (0 > dimensions.y)
+        {
+            y = 0;
+        }
+        else if(stg_height < dimensions.y + height)
+        {
+            y = stg_height;
+        }
+        else
+        {
+            y = dimensions.y;
+        }
+
+        return { x: x, y: y, width: width, height: height };
+    },
+
+    scaleDimensions: function(dimensions)
+    {
+        return {
+            top: dimensions.top * this.scale_y,
+            right: dimensions.right * this.scale_x,
+            bottom: dimensions.bottom * this.scale_y,
+            left: dimensions.left * this.scale_x
+        };
+    },
+
+    showSelection: function()
+    {
+        this.image_selection.show();
+    },
+
+    hideSelection: function()
+    {
+        this.image_selection.hide();
+    },
+
+    getCurrentSelection: function()
+    {
+        var relative_to = this.image.getAbsolutePosition();
+        return this.scaleDimensions(
+            this.image_selection.getSelection(relative_to)
+        );
+    },
+
+    setSelectMode: function(name)
+    {
+        this.image_selection.setResizeMode(name);
+    },
+
+    getStage: function()
+    {
+        return this.stage;
+    },
+
+    getLayer: function()
+    {
+        return this.layer;
+    },
+
+    getImage: function()
+    {
+        return this.image;
+    },
+
+    getImageBoundry: function()
+    {
+        return this.image_boundry;
+    },
+
+    getDOM: function()
+    {
+        return this.stage.getDOM();
     }
 };
-/*global ImageFilters:false */
 
-var PasteCommand = function()
+
+MainDisplay.DEFAULT_OPTIONS = {
+    width: 400,
+    height: 300
+};
+/*global ImageFilters: false*/
+var PreviewDisplay = function()
 {
-    this.paste_data = null;
-    this.area = null;
-    this.canvas = null;
-    this.ctx = null;
-    this.paste_backup = null;
+    this.stage = null;
+    this.layer = null;
+    this.image = null;
 };
 
-PasteCommand.prototype = {
+PreviewDisplay.prototype = {
 
     init: function(options)
     {
-        this.area = options.selection;
-        this.canvas = options.canvas;
-        this.ctx = this.canvas.getContext("2d");
-
-        this.paste_data = this.ctx.createImageData(
-            options.data.width,
-            options.data.height
-        );
-        ImageFilters.Copy(options.data, this.paste_data);
+        this.options = $.extend({}, PreviewDisplay.DEFAULT_OPTIONS, options || {});
+        this.options.container = $(this.options.container).first();
+        this.stage = new Kinetic.Stage({
+            width: this.options.width,
+            height: this.options.height,
+            container: this.options.container[0]
+        });
+        this.layer = new Kinetic.Layer({ id: 'image-layer' });
+        this.image = new Kinetic.Image({ id: 'preview-image' });
+        this.layer.add(this.image);
+        this.stage.add(this.layer);
     },
 
-    execute: function()
+    setImage: function(image, adopt_size)
     {
-        this.paste_backup = this.ctx.getImageData(
-            this.area.left, 
-            this.area.top,
-            this.paste_data.width,
-            this.paste_data.height
-        );
-        
-        var paste_data = this.ctx.createImageData(
-            this.paste_data.width,
-            this.paste_data.height
-        );
-        ImageFilters.Copy(this.paste_data, paste_data);
+        var stg_width = this.stage.getWidth(),
+            stg_height = this.stage.getHeight(),
+            ratio = image.naturalWidth / image.naturalHeight,
+            width, height;
 
-        this.ctx.putImageData(
-            this.paste_data,
-            this.area.left, 
-            this.area.top
+        if (1 < ratio)
+        {
+            height = image.naturalHeight > stg_height ? stg_height : image.naturalHeight;
+            width = height * ratio;
+        }
+        else
+        {
+            width = image.naturalWidth > stg_width ? stg_width : image.naturalWidth;
+            height = width / ratio;
+        }
+        this.image.setImage(image);
+        this.image.setX(
+            stg_width / 2 - (width / 2)
         );
-        // make sure we still have paste data, when we are replayed.
-        this.paste_data = paste_data;
+        this.image.setY(
+            stg_height / 2 - (height / 2)
+        );
+        this.image.setWidth(width);
+        this.image.setHeight(height);
+        this.layer.draw();
     },
 
-    revert: function()
+    getStage: function()
     {
-        this.ctx.putImageData(
-            this.paste_backup,
-            this.area.left, 
-            this.area.top
-        );
+        return this.stage;
+    },
+
+    getLayer: function()
+    {
+        return this.layer;
+    },
+
+    getImage: function()
+    {
+        return this.image;
+    },
+
+    getDOM: function()
+    {
+        return this.stage.getDOM();
     }
+};
+
+PreviewDisplay.DEFAULT_OPTIONS = {
+    width: 250,
+    height: 150
 };
 /*
     https://github.com/arahaya/ImageFilters.js/blob/master/imagefilters.js
@@ -3344,15 +3694,25 @@ ImageFilters.Twril = function (srcImageData, centerX, centerY, radius, angle, ed
 
 exports.IchieJs = {
     /**
-     * Takes a DOMElement that will serve as the container for Ichie's stage
-     * and returns a fresh and initialized Ichie instance.
+     * @see IchieJs for supported options.
      */
-    create: function(container) 
+    create: function(options) 
     {
+        var exposed_methods = [ 
+            'launch' , 'showSelection', 'hideSelection', 'setSelectMode', 'copySelection',
+            'pasteClipboard', 'filter', 'crop', 'undo', 'redo', 'downloadAsImage'
+        ];
+
         var ichie = new Ichie();
-        ichie.init(container);
-        return ichie;
+        ichie.init(options);
+
+        var api = {};
+        for (var i = 0; i < exposed_methods.length; i++)
+        {
+            var method_name = exposed_methods[i];
+            api[method_name] = ichie[method_name].bind(ichie);
+        }
+        return api;
     }
 };
-
 })(typeof exports === 'object' && exports || this, $, _);

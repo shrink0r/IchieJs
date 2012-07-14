@@ -24,21 +24,17 @@
             </div>
         </header>
 
-        <div class="container-fluid">
-            <div class="row container-header">
+        <div class="container-fluid container-content">
+            <section class="row-fluid container-header">
                 <div class="span12">
                     <h1 class="title">Basic usage example</h1>
                 </div>
-            </div>
-        </div>
+            </section>
 
-        <!-- HtmlDoc - Content -->
-        <div class="container-fluid">
-            <div class="row container-content">
-
-                <section class="span12 container-filters">
+            <section class="row-fluid container-filters">
+                <div class="span12">
                     <h2>Filters</h2>
-                    <ul class="list-filters">
+                    <ul class="filter-list">
                         <li>
                             <a href="#" class="label label-info trigger-filter" data-filter-name="GrayScale">
                                 <span class="icon-filter"></span>GrayScale
@@ -65,35 +61,121 @@
                             </a>
                         </li>
                     </ul>
-                </section>
-
-                <section class="span12 container-tools">
-                    <h2>Tools</h2>
-                    <div class="btn-group">
-                        <button class="btn trigger-undo icon-undo"> Undo</button>
-                        <button class="btn trigger-redo icon-repeat"> Redo</button>
-                    </div>
-                    <div class="btn-group" data-toggle="buttons-radio">
-                        <button class="btn trigger-copy icon-copy"> Copy</button>
-                        <button class="btn trigger-paste active icon-paste"> Paste</button>
-                    </div>
-                    <button class="btn trigger-keep-ratio icon-lock" data-toggle="button"> Lock Ratio</button>
-                    <button class="btn trigger-crop icon-cut"> Crop</button>
-                </section>
-
-            </div>
-
-            <div class="row">
-                <section class="span12">
-                 <!-- The container that we will pass to Ichie and where the stage will be injected.  -->
-                    <div class="container-ichiejs"></div>
                 </div>
+            </section>
+
+            <section class="row-fluid container-tools">
+                <div class="span12">
+                    <h2>Tools</h2>
+                    <ul class="tool-list">
+                        <li>
+                            <div class="btn-group">
+                                <button class="btn trigger-undo">
+                                    <span class="icon-undo"></span> Undo
+                                </button>
+                                <button class="btn trigger-redo">
+                                    <span class="icon-repeat"></span> Redo
+                                </button>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="btn-group" data-toggle="buttons-radio">
+                                <button class="btn trigger-copy">
+                                    <span class="icon-copy"></span> Copy
+                                </button>
+                                <button class="btn trigger-paste active">
+                                    <span class="icon-paste"></span> Paste
+                                </button>
+                            </div>
+                        </li>
+                        <li>
+                            <button class="btn trigger-keep-ratio" data-toggle="single">
+                                <span class="icon-lock"></span> Lock Ratio
+                            </button>
+                        </li>
+                        <li>
+                            <button class="btn trigger-crop">
+                                <span class="icon-cut"></span> Crop
+                            </button>
+                        </li>
+                        <li>
+                            <button class="btn trigger-resize">
+                                <span class="icon-resize-full"></span> Resize
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="row-fluid container-ichiejs">
+                <div class="span12">
+                    <div class="ichiejs-main-stage span8">
+                    <!-- IchieJs will inject it's main-stage canvas right here. -->                        
+                    </div>
+                    <div class="ichiejs-info-panel span4">
+                        <div class="current-selection">
+                            <h3>Cur Selection</h3>
+                            <form class="form-search">
+                                <div>
+                                    <label>Width:</label><input type="text" value="10px" />
+                                    <label>Pos X:</label><input type="text" value="10px" />
+                                </div>
+                                <div>
+                                    <label>Height:</label><input type="text" value="10px" />
+                                    <label>Pos Y:</label><input type="text" value="10px" />
+                                </div>
+                                <hr />
+                            </form>
+                        </div>
+                        <div class="ichiejs-preview-stage">
+                        <!-- IchieJs will inject it's preview-stage canvas right here. -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="row-fluid container-controls">
+                <div class="span12">
+                    <button class="btn btn-primary trigger-download icon-download"> Download Image</button>
+                    <button class="btn btn-primary trigger-upload icon-upload"> Upload Image</button>
+                </div>
+            </section>
+        </div>
+
+        <div class="modal hide" id="resize-modal">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">×</button>
+                <h3>Resize Image</h3>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal">
+                    <fieldset>
+                        <legend>Enter new dimensions</legend>
+                        <div class="control-group">
+                            <label class="control-label" for="input-width">Width</label>
+                            <div class="controls">
+                                <input type="text" class="input-xlarge" id="input-width" />
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="input-height">Height</label>
+                            <div class="controls">
+                                <input type="text" class="input-xlarge" id="input-height" />
+                            </div>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+                <a href="#" class="btn btn-primary">Do it</a>
             </div>
         </div>
 
         <!-- Javascript - Libraries -->
         <script type='text/javascript' src='js/libs/underscore.min.js'></script>
         <script type='text/javascript' src='js/libs/jquery-1.7.2.js'></script>
+        <script type='text/javascript' src='js/libs/jquery.mousewheel.js'></script>
         <script type='text/javascript' src='js/libs/bootstrap.min.js'></script>
         <script type='text/javascript' src='js/libs/kinetic.js'></script>
         <!-- Javascript - IchieJs -->

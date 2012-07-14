@@ -7,13 +7,24 @@
 
 exports.IchieJs = {
     /**
-     * Takes a DOMElement that will serve as the container for Ichie's stage
-     * and returns a fresh and initialized Ichie instance.
+     * @see IchieJs for supported options.
      */
-    create: function(container) 
+    create: function(options) 
     {
+        var exposed_methods = [ 
+            'launch' , 'showSelection', 'hideSelection', 'setSelectMode', 'copySelection',
+            'pasteClipboard', 'filter', 'crop', 'undo', 'redo', 'downloadAsImage'
+        ];
+
         var ichie = new Ichie();
-        ichie.init(container);
-        return ichie;
+        ichie.init(options);
+
+        var api = {};
+        for (var i = 0; i < exposed_methods.length; i++)
+        {
+            var method_name = exposed_methods[i];
+            api[method_name] = ichie[method_name].bind(ichie);
+        }
+        return api;
     }
 };
