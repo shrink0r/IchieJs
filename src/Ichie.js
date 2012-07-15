@@ -26,17 +26,19 @@ Ichie.prototype = {
     init: function(options)
     {
         this.options = $.extend({}, Ichie.DEFAULT_OPTIONS, options || {});
+        var that = this;
+
+        this.preview_display = new PreviewDisplay();
+        this.preview_display.init({
+            container: this.options.preview_container
+        });
 
         this.main_display = new MainDisplay();
         this.main_display.init({
             container: this.options.main_container,
             width: this.options.width,
-            height: this.options.height
-        });
-
-        this.preview_display = new PreviewDisplay();
-        this.preview_display.init({
-            container: this.options.preview_container
+            height: this.options.height,
+            onViewportChanged: this.preview_display.onViewPortChanged.bind(this.preview_display)
         });
 
         this.working_canvas = document.createElement("canvas");
@@ -46,23 +48,13 @@ Ichie.prototype = {
     },
 
     /**
-     * Loads the given image, then displays it and initializes our ImageAreaSelection.
+     * --------------------------------------------------------------------------
+     * PRIVATE METHODS - CLASS INTERNAL USAGE ONLY!
+     * --------------------------------------------------------------------------
      */
-    launch: function(image_source, ready_hook)
-    {
-        var that = this, image = new Image();
-
-        image.onload = function()
-        {
-            that.onImageProcessed(image);
-            ready_hook();
-        };
-        image.src = image_source;
-    },
 
     onImageProcessed: function(image)
     {
-        console.log("PROCESSED YAY");
         var width = image.naturalWidth, 
             height = image.naturalHeight,
             working_ctx = this.working_canvas.getContext("2d"),
@@ -76,15 +68,32 @@ Ichie.prototype = {
         }
         
         working_ctx.drawImage(image, 0, 0);
+        // atm, always update the preview-display first, as the main-display throws viewport events,
+        // that require the preview-display to allready have the latest image set. :S
+        this.preview_display.setImage(image, adopt_size); 
         this.main_display.setImage(image, adopt_size);
-        this.preview_display.setImage(image, adopt_size);
     },
 
     /**
-     * -------------------------------------------------------
-     * PUBLIC API STARTS HERE, ALL PREVIOUS METHODS ARE TO BE CONSIDERED PRIVATE!
-     * -------------------------------------------------------
+     * --------------------------------------------------------------------------
+     * PUBLIC METHODS - USE AS YOU LIKE
+     * --------------------------------------------------------------------------
      */
+
+     /**
+     * Loads the given image, then displays it and initializes our ImageAreaSelection.
+     */
+    launch: function(image_source, ready_hook)
+    {
+        var that = this, image = new Image();
+
+        image.onload = function()
+        {
+            that.onImageProcessed(image);
+            ready_hook();
+        };
+        image.src = image_source;
+    },
 
     /**
      * Shows the currently image selection.

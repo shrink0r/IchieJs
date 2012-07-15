@@ -44,8 +44,7 @@
     margin-left: 0;
 }
 
-.ichiejs-main-stage canvas,
-.ichiejs-preview-stage canvas
+.ichiejs-main-stage canvas
 {
     border: 1px solid #ababab;
 }

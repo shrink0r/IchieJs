@@ -23,7 +23,6 @@ var ImageAreaSelection = function()
     this.resizeInteraction = null;
     this.resize_overlay = null;
     this.drag_bounds = null;
-    this.onchanged = null;
 };
 
 ImageAreaSelection.prototype = {
@@ -156,6 +155,21 @@ ImageAreaSelection.prototype = {
         return shapes_group;
     },
 
+    updateDragBounds: function()
+    {
+        this.shapes_group.setDragBounds({
+            top: this.drag_bounds.top,
+            right: this.drag_bounds.right - this.selection_rect.getWidth(),
+            bottom: this.drag_bounds.bottom - this.selection_rect.getHeight(),
+            left: this.drag_bounds.left
+        });
+
+        if (this.resize_overlay)
+        {
+            this.resize_overlay.update();
+        }
+    },
+
     /**
      * Calculates the bounds of the image which is currently loaded
      * by the main display.
@@ -163,7 +177,7 @@ ImageAreaSelection.prototype = {
     setDragBounds: function(drag_bounds)
     {
         this.drag_bounds = drag_bounds;
-        this.shapes_group.setDragBounds(this.drag_bounds);
+        this.updateDragBounds();
     },
 
     /**
@@ -228,7 +242,7 @@ ImageAreaSelection.prototype = {
         this.correctResizeHandlePositions();
         this.resize_overlay.update();
 
-        this.options.onchanged(selection);
+        this.updateDragBounds();
         this.layer.draw();
     },
 
@@ -256,7 +270,7 @@ ImageAreaSelection.prototype = {
 
     getImageBoundry: function()
     {
-        return this.display.getImageBoundry();
+        return this.drag_bounds;
     },
 
     /**
@@ -316,6 +330,5 @@ ImageAreaSelection.DEFAULT_OPTIONS = {
     show: false,
     stroke: "white",
     stroke_width: 2,
-    keep_ratio: false,
-    onchanged: function(){}
+    keep_ratio: false
 };
