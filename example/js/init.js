@@ -10,8 +10,26 @@
         main_container: '.ichiejs-main-stage',
         preview_container: '.ichiejs-preview-stage',
         width: 550,
-        height: 350
+        height: 350,
+        onSelectionChanged: function(selection)
+        {
+            info_fields.x.val(Math.round(selection.left));
+            info_fields.y.val(Math.round(selection.top));
+            info_fields.width.val(
+                Math.round(selection.right - selection.left)
+            );
+            info_fields.height.val(
+                Math.round(selection.bottom - selection.top)
+            );
+        }
     });
+
+    var info_fields = {
+        width: $('.field-selection-width'),
+        x: $('.field-selection-x'),
+        height: $('.field-selection-height'),
+        y: $('.field-selection-y')
+    };
 
     ichie.launch('images/Kitten_Desktop.jpg', function()
     {

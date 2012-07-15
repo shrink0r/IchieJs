@@ -244,6 +244,10 @@ ImageAreaSelection.prototype = {
 
         this.updateDragBounds();
         this.layer.draw();
+
+        this.options.onSelectionChanged(
+            this.getSelection(true)
+        );
     },
 
     setResizeMode: function(mode_name)
@@ -332,5 +336,6 @@ ImageAreaSelection.DEFAULT_OPTIONS = {
     show: false,
     stroke: "white",
     stroke_width: 2,
-    keep_ratio: false
+    keep_ratio: false,
+    onSelectionChanged: function() {}
 };

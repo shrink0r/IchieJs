@@ -33,15 +33,21 @@ MainDisplay.prototype = {
         this.layer.add(this.image);
         this.stage.add(this.layer);
 
+        var that = this;
         this.image_selection = new ImageAreaSelection();
         this.image_selection.init(this, {
             stage: this.stage,
             width: options.select_width || this.stage.getWidth(),
-            height: options.select_height || this.stage.getHeight()
+            height: options.select_height || this.stage.getHeight(),
+            onSelectionChanged: function()
+            {
+                that.options.onSelectionChanged(
+                    that.getCurrentSelection()
+                );
+            }
         });
 
         this.zoom_handler = this.onImageZoomed.bind(this);
-        var that = this;
         this.image.on('dragmove', function()
         {
             that.options.onViewportChanged(
@@ -51,6 +57,10 @@ MainDisplay.prototype = {
                     bottom: (-that.image.getY() + that.stage.getHeight()), 
                     left: -that.image.getX()
                 })
+            );
+
+            that.options.onSelectionChanged(
+                that.getCurrentSelection()
             );
         });
     },
@@ -174,11 +184,15 @@ MainDisplay.prototype = {
 
         this.setImageDragBounds({ top: y, right: (x + new_width), bottom: (y + new_height), left: x });
         this.updateViewportDragBounds();
+
+        this.layer.draw();
+
         this.options.onViewportChanged(
             this.translateDimensions({ top: -y, right: (-x + stg_width), bottom: (-y + stg_height), left: -x })
         );
-
-        this.layer.draw();
+        this.options.onSelectionChanged(
+            this.getCurrentSelection()
+        );
         return false;
     },
 
@@ -260,13 +274,47 @@ MainDisplay.prototype = {
             });
 
             this.updateViewportDragBounds();
+
             this.options.onViewportChanged(
                 this.translateDimensions({ top: -y, right: (-x + stg_width), bottom: (-y + stg_height), left: -x })
             );
+
             this.manageZoomHandler();
         }
         
         this.layer.draw();
+    },
+
+    onViewportChanged: function(viewport_size)
+    {
+        var offset_pos = this.image.getAbsolutePosition();
+
+        var width = (viewport_size.right - viewport_size.left )/ this.scale_x;
+        var height = (viewport_size.bottom - viewport_size.top ) / this.scale_y;
+        var ratio = this.natural_dim.width / this.natural_dim.height;
+        var zoom_y = this.stage.getHeight() / height;
+        var zoom_x = this.stage.getWidth() / width;
+        var image_height = (this.natural_dim.height / this.scale_y) * zoom_y;
+        var image_width = image_height * ratio;
+        var x = -(viewport_size.left / this.scale_x) * zoom_x;
+        var y = -(viewport_size.top / this.scale_y) * zoom_y;
+
+        this.image.setHeight(image_height);
+        this.image.setWidth(image_width);
+        this.image.setX(x);
+        this.image.setY(y);
+
+        this.scale_x = this.natural_dim.width / image_width;
+        this.scale_y = this.natural_dim.height / image_height;
+
+        this.setImageDragBounds({ top: y, right: (x + image_width), bottom: (y + image_height), left: x });
+        this.updateViewportDragBounds();
+
+        this.layer.draw();
+
+        this.options.onSelectionChanged(
+            this.getCurrentSelection()
+        );
     },
 
     getCurrentSelection: function()
@@ -302,5 +350,6 @@ MainDisplay.prototype = {
 MainDisplay.DEFAULT_OPTIONS = {
     width: 400,
     height: 300,
-    onzoomed: function() {}
+    onViewportChanged: function() {},
+    onSelectionChanged: function() {}
 };

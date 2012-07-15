@@ -29,16 +29,19 @@ Ichie.prototype = {
         var that = this;
 
         this.preview_display = new PreviewDisplay();
-        this.preview_display.init({
-            container: this.options.preview_container
-        });
-
         this.main_display = new MainDisplay();
+
+        this.preview_display.init({
+            container: this.options.preview_container,
+            onViewportChanged: that.main_display.onViewportChanged.bind(that.main_display)
+        });
+        
         this.main_display.init({
             container: this.options.main_container,
             width: this.options.width,
             height: this.options.height,
-            onViewportChanged: this.preview_display.onViewPortChanged.bind(this.preview_display)
+            onViewportChanged: this.preview_display.onViewPortChanged.bind(this.preview_display),
+            onSelectionChanged: this.options.onSelectionChanged
         });
 
         this.working_canvas = document.createElement("canvas");
@@ -241,5 +244,6 @@ Ichie.prototype = {
  */
 Ichie.DEFAULT_OPTIONS = {
     width: 500,
-    height: 300
+    height: 300,
+    onSelectionChanged: function() {}
 };
