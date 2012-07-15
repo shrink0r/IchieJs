@@ -287,6 +287,7 @@ ImageAreaSelection.prototype = {
     show: function()
     {
         this.layer.show();
+        this.resize_overlay.show();
         this.layer.draw();
     },
 
@@ -296,6 +297,7 @@ ImageAreaSelection.prototype = {
     hide: function()
     {
         this.layer.hide();
+        this.resize_overlay.hide();
         this.layer.draw();
     }
 };

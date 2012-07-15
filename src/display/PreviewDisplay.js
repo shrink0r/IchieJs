@@ -46,7 +46,7 @@ PreviewDisplay.prototype = {
      * --------------------------------------------------------------------------
      */
 
-    adjustImageDimensions: function(image)
+    fitImageToStage: function(image)
     {
         var width = image.naturalWidth,
             height = image.naturalHeight,
@@ -106,7 +106,7 @@ PreviewDisplay.prototype = {
         if (prev_width !== this.original_dim.width ||
             prev_height !== this.original_dim.height)
         {
-            this.adjustImageDimensions(image);
+            this.fitImageToStage(image);
         }
 
         this.layer.draw();

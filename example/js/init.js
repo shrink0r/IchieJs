@@ -15,8 +15,6 @@
 
     ichie.launch('images/Kitten_Desktop.jpg', function()
     {
-        ichie.showSelection();
-
         $('.trigger-copy').click(function()
         {
             ichie.copySelection();
@@ -64,6 +62,18 @@
             ichie.setSelectMode(
                 $(this).hasClass('active') ? 'default' : 'keep-ratio'
             );
+        });
+
+        $('.trigger-toggle-selection').click(function()
+        {
+            if ($(this).hasClass('active'))
+            {
+                ichie.hideSelection();
+            }
+            else
+            {
+                ichie.showSelection();
+            }
         });
     });
 })(typeof exports === 'object' && exports || this, jQuery);

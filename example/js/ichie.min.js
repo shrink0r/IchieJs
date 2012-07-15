@@ -779,6 +779,7 @@ ImageAreaSelection.prototype = {
     show: function()
     {
         this.layer.show();
+        this.resize_overlay.show();
         this.layer.draw();
     },
 
@@ -788,6 +789,7 @@ ImageAreaSelection.prototype = {
     hide: function()
     {
         this.layer.hide();
+        this.resize_overlay.hide();
         this.layer.draw();
     }
 };
@@ -838,7 +840,8 @@ SelectionOverlay.prototype = {
     {
         this.image_selection = image_selection;
         this.layer = new Kinetic.Layer({
-            alpha: 0.5
+            alpha: 0.5,
+            visible: false
         });
 
         var boundry = this.image_selection.drag_bounds;
@@ -906,6 +909,18 @@ SelectionOverlay.prototype = {
             Math.ceil(rect.getHeight())
         );
 
+        this.layer.draw();
+    },
+
+    show: function()
+    {
+        this.layer.show();
+        this.layer.draw();
+    },
+
+    hide: function()
+    {
+        this.layer.hide();
         this.layer.draw();
     }
 };
@@ -1368,7 +1383,7 @@ MainDisplay.prototype = {
         });
 
         this.layer = new Kinetic.Layer({ id: 'image-layer' });
-        this.image = new Kinetic.Image({ id: 'preview-image' });
+        this.image = new Kinetic.Image({ id: 'preview-image', draggable: true });
         this.layer.add(this.image);
         this.stage.add(this.layer);
 
@@ -1380,6 +1395,18 @@ MainDisplay.prototype = {
         });
 
         this.zoom_handler = this.onImageZoomed.bind(this);
+        var that = this;
+        this.image.on('dragmove', function()
+        {
+            that.options.onViewportChanged(
+                that.translateDimensions({ 
+                    top: -that.image.getY(), 
+                    right: (-that.image.getX() + that.stage.getWidth()), 
+                    bottom: (-that.image.getY() + that.stage.getHeight()), 
+                    left: -that.image.getX()
+                })
+            );
+        });
     },
 
     /**
@@ -1388,7 +1415,7 @@ MainDisplay.prototype = {
      * --------------------------------------------------------------------------
      */
 
-    adjustImageDimensions: function(image)
+    fitImageToStage: function(image)
     {
         var width = image.naturalWidth,
             height = image.naturalHeight,
@@ -1424,6 +1451,8 @@ MainDisplay.prototype = {
             y = (stg_height / 2) - (new_height / 2);
         this.image.setX(x);
         this.image.setY(y);
+
+        return { top: y, right: (x + new_width), bottom: (y + new_height), left: x };
     },
 
     setImageDragBounds: function(bounds)
@@ -1498,12 +1527,44 @@ MainDisplay.prototype = {
         this.scale_y = this.natural_dim.height / new_height;
 
         this.setImageDragBounds({ top: y, right: (x + new_width), bottom: (y + new_height), left: x });
+        this.updateViewportDragBounds();
         this.options.onViewportChanged(
             this.translateDimensions({ top: -y, right: (-x + stg_width), bottom: (-y + stg_height), left: -x })
         );
 
         this.layer.draw();
         return false;
+    },
+
+    updateViewportDragBounds: function()
+    {
+        var drag_bounds = {},
+            width = this.image.getWidth(),
+            height = this.image.getHeight(),
+            stg_width = this.stage.getWidth(),
+            stg_height = this.stage.getHeight();
+
+        if (width > stg_width)
+        {
+            drag_bounds.left = stg_width - width;
+            drag_bounds.right = 0;
+        }
+        else
+        {
+            drag_bounds.left = this.image.getX();
+            drag_bounds.right = drag_bounds.left;
+        }
+        if (height > stg_height)
+        {
+            drag_bounds.top = stg_height - height;
+            drag_bounds.bottom = 0;
+        }
+        else
+        {
+            drag_bounds.top = this.image.getY();
+            drag_bounds.bottom = drag_bounds.top;
+        }
+        this.image.setDragBounds(drag_bounds);
     },
 
     translateDimensions: function(dimensions)
@@ -1525,8 +1586,8 @@ MainDisplay.prototype = {
     setImage: function(image)
     {
         var prev_width = this.natural_dim.width,
-            prev_height = this.natural_dim.height,
-            adjusted = false;
+            prev_height = this.natural_dim.height;
+
         this.natural_dim = {
             width: image.naturalWidth,
             height: image.naturalHeight
@@ -1537,32 +1598,28 @@ MainDisplay.prototype = {
         if (prev_width !== this.natural_dim.width ||
             prev_height !== this.natural_dim.height)
         {
-            this.adjustImageDimensions(image);
-            adjusted = true;
-        }
+            this.original_bounds = this.fitImageToStage(image);
 
-        var x = this.image.getX(),
-            y = this.image.getY(),
-            width = this.image.getWidth(),
-            height = this.image.getHeight(),
-            stg_width = this.stage.getWidth(),
-            stg_height = this.stage.getHeight();
+            var x = this.image.getX(),
+                y = this.image.getY(),
+                width = this.image.getWidth(),
+                height = this.image.getHeight(),
+                stg_width = this.stage.getWidth(),
+                stg_height = this.stage.getHeight();
 
-        this.original_bounds = { top: y, right: (x + width), bottom: (y + height), left: x };
-        this.setImageDragBounds($.extend({}, this.original_bounds));
-
-        if (adjusted)
-        {
+            this.setImageDragBounds($.extend({}, this.original_bounds));
             this.image_selection.setSelection({
                 dim : { width : width, height: height },
                 pos: { x: x, y: y }
             });
-        }
 
-        this.manageZoomHandler();
-        this.options.onViewportChanged(
-            this.translateDimensions({ top: -y, right: (-x + stg_width), bottom: (-y + stg_height), left: -x })
-        );
+            this.updateViewportDragBounds();
+            this.options.onViewportChanged(
+                this.translateDimensions({ top: -y, right: (-x + stg_width), bottom: (-y + stg_height), left: -x })
+            );
+            this.manageZoomHandler();
+        }
+        
         this.layer.draw();
     },
 
@@ -1649,7 +1706,7 @@ PreviewDisplay.prototype = {
      * --------------------------------------------------------------------------
      */
 
-    adjustImageDimensions: function(image)
+    fitImageToStage: function(image)
     {
         var width = image.naturalWidth,
             height = image.naturalHeight,
@@ -1709,7 +1766,7 @@ PreviewDisplay.prototype = {
         if (prev_width !== this.original_dim.width ||
             prev_height !== this.original_dim.height)
         {
-            this.adjustImageDimensions(image);
+            this.fitImageToStage(image);
         }
 
         this.layer.draw();

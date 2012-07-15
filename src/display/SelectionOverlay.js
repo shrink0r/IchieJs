@@ -11,7 +11,8 @@ SelectionOverlay.prototype = {
     {
         this.image_selection = image_selection;
         this.layer = new Kinetic.Layer({
-            alpha: 0.5
+            alpha: 0.5,
+            visible: false
         });
 
         var boundry = this.image_selection.drag_bounds;
@@ -79,6 +80,18 @@ SelectionOverlay.prototype = {
             Math.ceil(rect.getHeight())
         );
 
+        this.layer.draw();
+    },
+
+    show: function()
+    {
+        this.layer.show();
+        this.layer.draw();
+    },
+
+    hide: function()
+    {
+        this.layer.hide();
         this.layer.draw();
     }
 };
