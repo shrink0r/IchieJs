@@ -23,6 +23,7 @@ module.exports = function(grunt) {
           'src/command/FilterCommand.js',
           'src/command/CropCommand.js',
           'src/command/PasteCommand.js',
+          'src/command/ResizeCommand.js',
           'src/display/ImageAreaSelection.js',
           'src/display/SelectionOverlay.js',  
           'src/display/ResizeInteraction.js',

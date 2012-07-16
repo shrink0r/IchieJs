@@ -1,6 +1,6 @@
 (function(exports, $, _) {
     var Kinetic = exports.Kinetic;
-/*global ImageAreaSelection:false, CommandQueue:false, FilterCommand:false, CropCommand:false, PasteCommand:false, PreviewDisplay: false, MainDisplay:false*/
+/*global ImageAreaSelection:false, CommandQueue:false, FilterCommand:false, CropCommand:false, PasteCommand:false, ResizeCommand:false, PreviewDisplay: false, MainDisplay:false*/
 
 // -----------------------------------------------------------------------------
 //                          Ichie
@@ -221,6 +221,21 @@ Ichie.prototype = {
             that = this;
 
         command.init(this.working_canvas, {
+            bounds: this.main_display.getCurrentSelection(),
+            onexecuted: that.onImageProcessed.bind(this)
+        });
+
+        this.command_queue.execute(command);
+    },
+
+    resize: function(width, height)
+    {
+        var command = new ResizeCommand(),
+            that = this;
+
+        command.init(this.working_canvas, {
+            width: width,
+            height: height,
             bounds: this.main_display.getCurrentSelection(),
             onexecuted: that.onImageProcessed.bind(this)
         });
@@ -493,6 +508,65 @@ PasteCommand.prototype = {
 
 PasteCommand.DEFAULT_OPTIONS = {
     onexecuted: function() {}
+};
+/*global ImageFilters: false*/
+
+var ResizeCommand = function()
+{
+    this.canvas = null;
+    this.ctx = null;
+    this.original_data = null;
+};
+
+ResizeCommand.prototype = {
+
+    init: function(canvas, options)
+    {
+        this.options = $.extend({}, ResizeCommand.DEFAULT_OPTIONS, options || {});
+        this.canvas = canvas;
+        this.ctx = this.canvas.getContext('2d');
+    },
+
+    execute: function()
+    {
+        this.original_data = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+
+        var src_data = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        var resized_data = ImageFilters.ResizeNearestNeighbor(src_data, this.options.width, this.options.height);
+        var canvas = document.createElement("canvas");
+        canvas.width = this.options.width;
+        canvas.height = this.options.height;
+        var tmp_ctx = canvas.getContext("2d");
+        tmp_ctx.putImageData(resized_data, 0, 0);
+
+        this.onExecuted(canvas);
+    },
+
+    revert: function()
+    {
+        var canvas = document.createElement("canvas");
+        canvas.width = this.original_data.width;
+        canvas.height = this.original_data.height;
+        var tmp_ctx = canvas.getContext("2d");
+        tmp_ctx.putImageData(this.original_data, 0, 0);
+
+        this.onExecuted(canvas);
+    },
+
+    onExecuted: function(canvas)
+    {
+        var image = new Image(),
+            that = this;
+        image.onload = function()
+        {
+            that.options.onexecuted(image);
+        };
+        image.src = canvas.toDataURL();
+    }
+};
+
+ResizeCommand.DEFAULT_OPTIONS = {
+    onexecuted: function() {}    
 };
 /*global ResizeInteraction:false, SelectionOverlay:false*/
 
@@ -1717,6 +1791,7 @@ MainDisplay.DEFAULT_OPTIONS = {
     onSelectionChanged: function() {}
 };
 /*global ImageFilters: false*/
+
 var PreviewDisplay = function()
 {
     this.stage = null;
@@ -1780,15 +1855,6 @@ PreviewDisplay.prototype = {
 
     onViewportZoomed: function(event, delta, delta_x, delta_y)
     {
-        if (! this.orig_viewport_size)
-        {
-            this.orig_viewport_size = {
-                width: this.viewport_rect.getWidth(),
-                height: this.viewport_rect.getHeight(),
-                x: this.viewport_rect.getX(),
-                y: this.viewport_rect.getY()
-            };
-        }
         delta_x = -Math.ceil(delta_x);
         delta_y = -Math.ceil(delta_y);
 
@@ -1953,13 +2019,13 @@ PreviewDisplay.prototype = {
             height: image.naturalHeight
         };
 
-        this.image.setImage(image);
-
         if (prev_width !== this.original_dim.width ||
             prev_height !== this.original_dim.height)
         {
             this.fitImageToStage(image);
         }
+
+        this.image.setImage(image);
         this.updateViewportDragBounds();
         this.layer.draw();
     },
@@ -1979,6 +2045,16 @@ PreviewDisplay.prototype = {
         this.viewport_rect.setY(y);
         this.updateViewportDragBounds();
         this.layer.draw();
+
+        if (! this.orig_viewport_size)
+        {
+            this.orig_viewport_size = {
+                width: this.viewport_rect.getWidth(),
+                height: this.viewport_rect.getHeight(),
+                x: this.viewport_rect.getX(),
+                y: this.viewport_rect.getY()
+            };
+        }
     }
 };
 
@@ -4060,7 +4136,7 @@ exports.IchieJs = {
     {
         var exposed_methods = [ 
             'launch' , 'showSelection', 'hideSelection', 'setSelectMode', 'copySelection',
-            'pasteClipboard', 'filter', 'crop', 'undo', 'redo', 'downloadAsImage'
+            'pasteClipboard', 'filter', 'crop', 'undo', 'redo', 'downloadAsImage', 'resize'
         ];
 
         var ichie = new Ichie();

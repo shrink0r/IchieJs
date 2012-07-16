@@ -97,3 +97,10 @@
     border: none;
     margin-right: 1em;
 }
+
+.droppable canvas
+{
+    -webkit-box-shadow:0 0 10px #0F70BF; 
+    -moz-box-shadow: 0 0 10px #0F70BF; 
+    box-shadow:0 0 10px #0F70BF; 
+}

@@ -6,6 +6,16 @@
  */
 (function(exports, $)
 {
+    var info_fields = {
+        width: $('.field-selection-width'),
+        x: $('.field-selection-x'),
+        height: $('.field-selection-height'),
+        y: $('.field-selection-y')
+    };
+
+    /**
+     * Create the ichie instance.
+     */ 
     var ichie = exports.IchieJs.create({
         main_container: '.ichiejs-main-stage',
         preview_container: '.ichiejs-preview-stage',
@@ -24,74 +34,118 @@
         }
     });
 
-    var info_fields = {
-        width: $('.field-selection-width'),
-        x: $('.field-selection-x'),
-        height: $('.field-selection-height'),
-        y: $('.field-selection-y')
-    };
-
-    ichie.launch('images/Kitten_Desktop.jpg', function()
+    /**
+     * Register file drag & drop.
+     */
+    var dropbox = document.getElementById("dropbox")
+    var noop = function(evt)
     {
-        $('.trigger-copy').click(function()
+        evt.stopPropagation();
+        evt.preventDefault();
+        return false;
+    }
+    var main_stage = $('.ichiejs-main-stage')
+        .bind('dragenter', function()
         {
-            ichie.copySelection();
-        });
+            $(this).addClass('droppable');
+        })
+        .bind('dragexit', function()
+        {
+            $(this).removeClass('droppable');
+        })
+        .bind('dragover', noop)
+        .bind('drop', function(evt)
+        {
+            noop(evt);
 
-        $('.trigger-paste').click(function()
-        {
-            ichie.pasteClipboard();
-        });
-
-        $('.trigger-undo').click(function()
-        {
-            ichie.undo();
-        });
-
-        $('.trigger-redo').click(function()
-        {
-            ichie.redo();
-        });
-
-        $('.trigger-crop').click(function()
-        {
-            ichie.crop();
-        });
-
-        $('.trigger-download').click(function()
-        {
-            ichie.downloadAsImage();
-        });
-
-        $('.trigger-resize').click(function()
-        {
-            $('#resize-modal').modal('show');
-        });
-
-        $('.trigger-filter').click(function()
-        {
-            ichie.filter(
-                $(this).data('filter-name')
-            );
-        });
-
-        $('.trigger-keep-ratio').click(function()
-        {
-            ichie.setSelectMode(
-                $(this).hasClass('active') ? 'default' : 'keep-ratio'
-            );
-        });
-
-        $('.trigger-toggle-selection').click(function()
-        {
-            if ($(this).hasClass('active'))
+            var dt = evt.originalEvent.dataTransfer,
+                file = null;
+            if(dt.files.length > 0)
             {
-                ichie.hideSelection();
+                file = dt.files[0];
             }
-            else
+
+            var reader = new FileReader();
+            reader.onload = (function(the_file) 
             {
-                ichie.showSelection();
-            }
+                return function(e) 
+                {
+                    ichie.launch(e.target.result, function(){});
+                };
+            })(file);
+            reader.readAsDataURL(file);
+            $(this).removeClass('droppable');
+            return false;
         });
+
+    /**
+     * Register controls.
+     */
+    $('.trigger-copy').click(function()
+    {
+        ichie.copySelection();
+    });
+
+    $('.trigger-paste').click(function()
+    {
+        ichie.pasteClipboard();
+    });
+
+    $('.trigger-undo').click(function()
+    {
+        ichie.undo();
+    });
+
+    $('.trigger-redo').click(function()
+    {
+        ichie.redo();
+    });
+
+    $('.trigger-crop').click(function()
+    {
+        ichie.crop();
+    });
+
+    $('.trigger-download').click(function()
+    {
+        ichie.downloadAsImage();
+    });
+
+    $('.trigger-resize').click(function()
+    {
+        $('#resize-modal').modal('show');
+    });
+
+    $('.trigger-filter').click(function()
+    {
+        ichie.filter(
+            $(this).data('filter-name')
+        );
+    });
+
+    $('.trigger-keep-ratio').click(function()
+    {
+        ichie.setSelectMode(
+            $(this).hasClass('active') ? 'default' : 'keep-ratio'
+        );
+    });
+
+    $('.resize-button').click(function()
+    {
+        var width = $('#input-resize-width').val();
+        var height = $('#input-resize-height').val();
+        ichie.resize(width, height);
+    });
+
+    $('.trigger-toggle-selection').click(function()
+    {
+        if ($(this).hasClass('active'))
+        {
+            ichie.hideSelection();
+        }
+        else
+        {
+            ichie.showSelection();
+        }
     });
 })(typeof exports === 'object' && exports || this, jQuery);

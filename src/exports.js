@@ -13,7 +13,7 @@ exports.IchieJs = {
     {
         var exposed_methods = [ 
             'launch' , 'showSelection', 'hideSelection', 'setSelectMode', 'copySelection',
-            'pasteClipboard', 'filter', 'crop', 'undo', 'redo', 'downloadAsImage'
+            'pasteClipboard', 'filter', 'crop', 'undo', 'redo', 'downloadAsImage', 'resize'
         ];
 
         var ichie = new Ichie();

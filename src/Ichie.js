@@ -1,4 +1,4 @@
-/*global ImageAreaSelection:false, CommandQueue:false, FilterCommand:false, CropCommand:false, PasteCommand:false, PreviewDisplay: false, MainDisplay:false*/
+/*global ImageAreaSelection:false, CommandQueue:false, FilterCommand:false, CropCommand:false, PasteCommand:false, ResizeCommand:false, PreviewDisplay: false, MainDisplay:false*/
 
 // -----------------------------------------------------------------------------
 //                          Ichie
@@ -219,6 +219,21 @@ Ichie.prototype = {
             that = this;
 
         command.init(this.working_canvas, {
+            bounds: this.main_display.getCurrentSelection(),
+            onexecuted: that.onImageProcessed.bind(this)
+        });
+
+        this.command_queue.execute(command);
+    },
+
+    resize: function(width, height)
+    {
+        var command = new ResizeCommand(),
+            that = this;
+
+        command.init(this.working_canvas, {
+            width: width,
+            height: height,
             bounds: this.main_display.getCurrentSelection(),
             onexecuted: that.onImageProcessed.bind(this)
         });

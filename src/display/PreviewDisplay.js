@@ -1,4 +1,5 @@
 /*global ImageFilters: false*/
+
 var PreviewDisplay = function()
 {
     this.stage = null;
@@ -62,15 +63,6 @@ PreviewDisplay.prototype = {
 
     onViewportZoomed: function(event, delta, delta_x, delta_y)
     {
-        if (! this.orig_viewport_size)
-        {
-            this.orig_viewport_size = {
-                width: this.viewport_rect.getWidth(),
-                height: this.viewport_rect.getHeight(),
-                x: this.viewport_rect.getX(),
-                y: this.viewport_rect.getY()
-            };
-        }
         delta_x = -Math.ceil(delta_x);
         delta_y = -Math.ceil(delta_y);
 
@@ -235,13 +227,13 @@ PreviewDisplay.prototype = {
             height: image.naturalHeight
         };
 
-        this.image.setImage(image);
-
         if (prev_width !== this.original_dim.width ||
             prev_height !== this.original_dim.height)
         {
             this.fitImageToStage(image);
         }
+
+        this.image.setImage(image);
         this.updateViewportDragBounds();
         this.layer.draw();
     },
@@ -261,6 +253,16 @@ PreviewDisplay.prototype = {
         this.viewport_rect.setY(y);
         this.updateViewportDragBounds();
         this.layer.draw();
+
+        if (! this.orig_viewport_size)
+        {
+            this.orig_viewport_size = {
+                width: this.viewport_rect.getWidth(),
+                height: this.viewport_rect.getHeight(),
+                x: this.viewport_rect.getX(),
+                y: this.viewport_rect.getY()
+            };
+        }
     }
 };
 
